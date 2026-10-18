@@ -1,0 +1,74 @@
+import sys
+from contextlib import chdir
+from pathlib import Path
+from subprocess import run
+
+import pytest
+
+# Import the full module so we can patch constants
+from pywrangler.types import wrangler_types
+
+RUNTIME_SDK_PATH = Path(__file__).resolve().parents[1] / ".." / "runtime-sdk"
+
+WRANGLER_TOML = """
+compatibility_date = "2025-08-14"
+
+kv_namespaces = [
+    { binding = "FOO", id = "<YOUR_KV_NAMESPACE_ID>" }
+]
+"""
+
+PYPROJECT_TOML = """
+[dependency-groups]
+dev = [
+    "mypy>=1.17.1",
+    "pyodide-py",
+    "workers-runtime-sdk",
+]
+
+[tool.uv.sources]
+workers-runtime-sdk = {{ path = "{runtime_sdk_path}" }}
+
+[tool.mypy]
+files = [
+    "src",
+]
+"""
+
+WORKER = """
+from workers import WorkerEntrypoint, Response, Request
+
+
+class Default(WorkerEntrypoint):
+    async def fetch(self, request: Request) -> Response:
+        reveal_type(self.env)
+        reveal_type(self.env.FOO)
+        await self.env.FOO.put("bar", "baz")
+        bar = await self.env.FOO.get("bar")
+        assert bar
+        reveal_type(bar)
+        return Response(bar)
+"""
+
+
+@pytest.mark.skipif(sys.version_info < (3, 13), reason="We create Python 3.13+ syntax")
+@pytest.mark.skipif(sys.platform == "win32", reason="Requires npx/wrangler toolchain")
+def test_types(tmp_path):
+    """Test that types are correctly revealed in a worker."""
+    config_path = tmp_path / "wrangler.toml"
+    pyproject_path = tmp_path / "pyproject.toml"
+    worker_dir = tmp_path / "src/worker"
+    worker_path = worker_dir / "entry.py"
+
+    worker_dir.mkdir(parents=True)
+    worker_path.write_text(WORKER)
+    config_path.write_text(WRANGLER_TOML)
+    pyproject_path.write_text(PYPROJECT_TOML.format(runtime_sdk_path=RUNTIME_SDK_PATH))
+
+    with chdir(tmp_path):
+        wrangler_types(None, None)
+        result = run(["uv", "run", "mypy"], capture_output=True, text=True, check=False)
+        assert 'Revealed type is "js.Env"' in result.stdout
+        assert 'Revealed type is "js.KVNamespace_iface"' in result.stdout
+        assert 'Revealed type is "str"' in result.stdout
+        assert "Success: no issues found" in result.stdout

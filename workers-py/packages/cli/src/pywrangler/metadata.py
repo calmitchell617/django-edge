@@ -1,0 +1,20 @@
+from datetime import datetime
+from typing import Literal, NamedTuple
+
+
+class PythonCompatVersion(NamedTuple):
+    version: Literal["3.12", "3.13", "3.14"]
+    compat_flag: str
+    compat_date: datetime | None
+    experimental: bool = False
+
+
+PYTHON_COMPAT_VERSIONS = [
+    PythonCompatVersion(
+        "3.14", "python_workers_314", datetime.strptime("2026-09-08", "%Y-%m-%d")
+    ),
+    PythonCompatVersion(
+        "3.13", "python_workers_20250116", datetime.strptime("2025-09-29", "%Y-%m-%d")
+    ),
+    PythonCompatVersion("3.12", "python_workers", None),
+]

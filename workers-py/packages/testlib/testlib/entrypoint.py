@@ -1,0 +1,283 @@
+import asyncio
+import importlib.util
+import sys
+from asyncio import InvalidStateError
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from dataclasses import dataclass
+from io import StringIO
+from typing import Any
+from urllib.parse import parse_qs, urlparse
+
+import pytest
+from pyodide.webloop import WebLoop
+from workers import Response, WorkerEntrypoint
+
+from .tracebacks import dump_exception
+
+
+class EnvPlugin:
+    def __init__(self, env):
+        self._env = env
+
+    @pytest.fixture
+    def env(self):
+        return self._env
+
+
+def _describe_call_exception(item, call):
+    """Structured description of the exception recorded in ``call``.
+
+    Uses pytest's own traceback pruning so the host only sees the frames pytest
+    would have shown had the test run there directly.
+    """
+    excinfo = call.excinfo
+    traceback_filter = getattr(item, "_traceback_filter", excinfo.traceback.filter)
+    entries = [entry._rawentry for entry in traceback_filter(excinfo)]
+    return {"pickle": dump_exception(excinfo.value, entries), "when": call.when}
+
+
+class ResultCollector:
+    """Record each pytest result under its host-suite test name."""
+
+    def __init__(self):
+        self.results = {}
+
+    @staticmethod
+    def _key(item):
+        normalized = []
+        if item.cls is not None:
+            normalized.append(item.cls.__name__)
+        name = getattr(item, "originalname", None) or item.name
+        normalized.append(name[len("test_") :] if name.startswith("test_") else name)
+        return "__".join(normalized)
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_makereport(self, item, call):
+        outcome = yield
+        report = outcome.get_result()
+        key = self._key(item)
+        if report.passed:
+            if report.when == "call":
+                self.results[key] = {"status": "passed"}
+            elif report.when == "teardown" and key not in self.results:
+                # Only reachable if no call report was recorded at all.
+                self.results[key] = {"status": "passed"}
+        elif report.skipped:
+            self.results[key] = {
+                "status": "skipped",
+                "reason": str(report.longrepr),
+            }
+        elif report.failed:
+            result = {"status": "failed", "traceback": report.longreprtext}
+            self.results[key] = result
+            excinfo = call.excinfo
+            if excinfo is not None:
+                result["exception"] = _describe_call_exception(item, call)
+            if report.when == "call":
+                if excinfo is None:
+                    # e.g. a strict xfail that unexpectedly passed.
+                    result["error"] = report.longreprtext or "unknown error"
+                elif excinfo.errisinstance(AssertionError):
+                    result["error"] = str(excinfo.value)
+                    del result["traceback"]
+                else:
+                    result["error"] = f"{excinfo.typename}: {excinfo.value}"
+            else:
+                result["error"] = report.longreprtext
+                del result["traceback"]
+
+
+async def _noop(*args):
+    pass
+
+
+def _cancel_all_tasks(loop):
+    """
+    Pyodide 0.26.0a2's WebLoop causes InvalidStateError when _cancel_all_tasks
+    calls task.exception() on done-but-not-cancelled tasks. Replace with a
+    version that cancels tasks but tolerates that error.
+    """
+    to_cancel = asyncio.tasks.all_tasks(loop)
+    if not to_cancel:
+        return
+    for task in to_cancel:
+        task.cancel()
+    loop.run_until_complete(asyncio.tasks.gather(*to_cancel, return_exceptions=True))
+    for task in to_cancel:
+        if task.cancelled():
+            continue
+        try:
+            if task.exception() is not None:
+                loop.call_exception_handler(
+                    {
+                        "message": "unhandled exception during asyncio.run() shutdown",
+                        "exception": task.exception(),
+                        "task": task,
+                    }
+                )
+        # Note: This exception catch is added from the original implementation
+        except (InvalidStateError, RuntimeError):
+            pass
+
+
+@contextmanager
+def restore_loop():
+    saved_loop = asyncio.events._get_running_loop()
+    try:
+        yield
+    finally:
+        asyncio.events._set_running_loop(saved_loop)
+
+
+@contextmanager
+def patch_asyncio():
+    # pytest-asyncio relies on these methods, which older Pyodide WebLoops omit.
+    orig_shutdown_asyncgens = WebLoop.shutdown_asyncgens
+    orig_shutdown_default_executor = WebLoop.shutdown_default_executor
+    orig_cancel_all_tasks = asyncio.runners._cancel_all_tasks  # type: ignore[attr-defined]
+
+    WebLoop.shutdown_asyncgens = _noop
+    WebLoop.shutdown_default_executor = _noop
+    if sys.version_info < (3, 13):
+        asyncio.runners._cancel_all_tasks = _cancel_all_tasks  # type: ignore[attr-defined]
+    try:
+        yield
+    finally:
+        WebLoop.shutdown_asyncgens = orig_shutdown_asyncgens
+        WebLoop.shutdown_default_executor = orig_shutdown_default_executor
+        asyncio.runners._cancel_all_tasks = orig_cancel_all_tasks  # type: ignore[attr-defined]
+
+
+def run_pytest(pytest_args):
+    """Run pytest inside a worker with the asyncio patches applied.
+
+    Intended for workerd `test()` handlers that invoke pytest directly rather
+    than via `TestRunner`. Fails the calling test if pytest reports failures.
+    """
+    with restore_loop(), patch_asyncio():
+        exit_code = pytest.main(pytest_args)
+    assert exit_code == 0, f"pytest exit code {exit_code}"
+
+
+class ExtraKeywordsPlugin:
+    """Attach host-only ``-k`` keywords to every collected item.
+
+    The host's mirrored items carry keywords (host module name, compat-config
+    parameter, marks) that don't exist in the worker; adding them here makes a
+    forwarded ``-k`` expression select the same tests on both sides.
+    """
+
+    def __init__(self, keywords):
+        self.keywords = set(keywords)
+
+    def pytest_itemcollected(self, item):
+        item.extra_keyword_matches.update(self.keywords)
+
+
+@dataclass
+class RunSuiteRequest:
+    """Parameters the host sends along with a ``/run-tests/<suite>`` request."""
+
+    pytest_args: list
+    keywords: list
+
+    @classmethod
+    def from_url(cls, url):
+        """Parse a ``/run-tests`` URL (string or ``urlparse`` result).
+
+        The host sends pytest arguments as repeated ``arg`` and extra ``-k``
+        keywords as repeated ``kw`` query parameters.
+        """
+        query = urlparse(url).query if isinstance(url, str) else url.query
+        params = parse_qs(query, keep_blank_values=True)
+        return cls(pytest_args=params.get("arg", []), keywords=params.get("kw", []))
+
+    @classmethod
+    def from_query_params(cls, query_params):
+        """Build from a Starlette-style multi-dict with ``getlist``."""
+        return cls(
+            pytest_args=query_params.getlist("arg"),
+            keywords=query_params.getlist("kw"),
+        )
+
+
+@dataclass
+class TestRunnerResult:
+    payload: Any
+    status: int
+
+
+class TestRunner:
+    def __init__(self, env, extra_plugins=()):
+        self.env = env
+        self.collector = ResultCollector()
+        self.extra_plugins = list(extra_plugins)
+
+    def plugins(self, keywords=()):
+        return [
+            self.collector,
+            EnvPlugin(self.env),
+            ExtraKeywordsPlugin(keywords),
+            *self.extra_plugins,
+        ]
+
+    def run_suite(self, suite_name, request=None):
+        """Run the ``test_<suite_name>`` module under pytest.
+
+        ``request`` carries the pytest arguments and extra ``-k`` keywords
+        forwarded from the host pytest invocation (see ``testlib.host``).
+        """
+        if request is None:
+            request = RunSuiteRequest([], [])
+        module = f"test_{suite_name}"
+        if importlib.util.find_spec(module) is None:
+            return TestRunnerResult(
+                {"error": f"Unknown suite '{suite_name}' (no module '{module}')"},
+                status=404,
+            )
+
+        output = StringIO()
+        with (
+            restore_loop(),
+            patch_asyncio(),
+            redirect_stdout(output),
+            redirect_stderr(output),
+        ):
+            exit_code = pytest.main(
+                ["--pyargs", module, "-p", "no:cacheprovider", *request.pytest_args],
+                plugins=self.plugins(request.keywords),
+            )
+        if exit_code != 0 and not self.collector.results:
+            return TestRunnerResult(
+                {
+                    "__session__": {
+                        "status": "error",
+                        "error": f"pytest exit code {exit_code}",
+                        "traceback": output.getvalue(),
+                    }
+                },
+                status=500,
+            )
+        return TestRunnerResult(self.collector.results, 200)
+
+
+class TestRunnerEntrypoint(WorkerEntrypoint):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.runner = TestRunner(self.env, extra_plugins=self.plugins())
+
+    def plugins(self):
+        """Extra pytest plugins to register for in-worker suites."""
+        return []
+
+    async def fetch(self, request):
+        url = urlparse(request.url)
+        path = url.path
+
+        if path.startswith("/run-tests/"):
+            suite_name = path[len("/run-tests/") :]
+            result = self.runner.run_suite(suite_name, RunSuiteRequest.from_url(url))
+            return Response.json(result.payload, result.status)
+        if path == "/health":
+            return Response.json({"ok": True})
+        return Response.json({"error": "not found"}, status=404)

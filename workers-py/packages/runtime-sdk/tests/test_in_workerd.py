@@ -1,0 +1,179 @@
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+from conftest import (
+    COMPAT_CONFIGS,
+    CompatConfig,
+)
+from testlib.host import (
+    configure_compatibility,
+    link_packages,
+    pywrangler_sync,
+)
+
+TEST_DIR = Path(__file__).parent
+WORKERD_TESTS = TEST_DIR / "workerd-test"
+DISK_SERVICE_NAME = "TEST_TMPDIR"
+
+
+def discover_workerd_tests():
+    """Find all subdirs under workerd-tests/ that contain a .wd-test file."""
+    cases = []
+    for subdir in sorted(WORKERD_TESTS.iterdir()):
+        if not subdir.is_dir():
+            continue
+        wd_files = list(subdir.glob("*.wd-test"))
+        if wd_files:
+            cases.append(pytest.param(subdir, wd_files[0].name, id=subdir.name))
+    return cases
+
+
+def resolve_workerd(target: Path) -> str:
+    """Return the path to the workerd binary to use for tests.
+
+    If the ``WORKERD_PATH`` environment variable is set, it is used as-is (this
+    is useful for testing against a locally built workerd). Otherwise, workerd
+    is installed from npm into ``target`` and the installed binary is used.
+    """
+    workerd_path = os.environ.get("WORKERD_PATH")
+    if workerd_path:
+        workerd_bin = Path(workerd_path).expanduser().resolve()
+        if not workerd_bin.is_file():
+            raise FileNotFoundError(
+                f"WORKERD_PATH is set but does not point to a file: {workerd_bin}"
+            )
+        return str(workerd_bin)
+
+    subprocess.run(
+        ["npm", "i", "workerd"],
+        cwd=target,
+        check=True,
+    )
+    return "node_modules/workerd/bin/workerd"
+
+
+def embed(dir: Path, root: Path, level: int = 0):
+    modules = []
+    module_path_root = dir
+    for _ in range(level):
+        module_path_root = module_path_root.parent
+
+    for path in dir.glob("**/*"):
+        if path.is_dir():
+            continue
+
+        module_path = path.absolute().relative_to(module_path_root)
+        embed_path = path.absolute().relative_to(root)
+        if path.suffix == ".py":
+            module_type = "pythonModule"
+        elif _is_sdk_js_module(path.relative_to(dir)):
+            module_type = "esModule"
+        else:
+            module_type = "data"
+        modules.append(
+            f'(name = "{module_path}", {module_type} = embed "{embed_path}")'
+        )
+    return modules
+
+
+def _is_sdk_js_module(path_in_vendor_dir: Path) -> bool:
+    """Mirror wrangler: `.js`/`.mjs` files under `python_modules/workers/` are ES modules.
+
+    Other vendored packages may ship `.js` assets that are not valid ES modules, so wrangler
+    only applies this rule to the SDK's own `workers/` package. Everything else stays `data`.
+    """
+    in_sdk_package = path_in_vendor_dir.parts[:1] == ("workers",)
+    return in_sdk_package and path_in_vendor_dir.suffix in (".js", ".mjs")
+
+
+@pytest.fixture(scope="module")
+def bundle_cache_dir(tmp_path_factory):
+    yield tmp_path_factory.mktemp("bundle_cache")
+
+
+@pytest.mark.parametrize(
+    "compat_config",
+    COMPAT_CONFIGS,
+    ids=[c.python_version for c in COMPAT_CONFIGS],
+)
+@pytest.mark.parametrize("test_dir, wd_test_file", discover_workerd_tests())
+def test_in_workerd(  # noqa: PLR0913, PLR0917  (too-many-arguments)
+    tmp_path,
+    test_dir,
+    wd_test_file,
+    compat_config: CompatConfig,
+    pytestconfig,
+    bundle_cache_dir,
+):
+    compat_date = compat_config.compat_date
+    python_version = compat_config.python_version
+
+    # `wsgi` streams the request body via `pyodide.ffi.run_sync` (JSPI), which
+    # is only available in newer Pyodide runtimes.
+    if test_dir.name == "wsgi" and python_version == "3.12":
+        pytest.skip(
+            "wsgi requires pyodide.ffi.run_sync (JSPI), unavailable before 2026-01-01"
+        )
+
+    if test_dir.name == "http-client" and python_version < "3.14":
+        pytest.skip("HTTP client compatibility tests require Python 3.14 or newer")
+
+    color = pytestconfig.get_terminal_writer().hasmarkup
+    target = tmp_path / test_dir.name
+    disk_service_dir = target / DISK_SERVICE_NAME
+    shutil.copytree(test_dir, target, ignore=shutil.ignore_patterns(".venv"))
+    # Makes the project's `../packages/{runtime-sdk,testlib}` sources resolve
+    # so `sync` vendors the working-tree SDK and testlib.
+    link_packages(tmp_path)
+    disk_service_dir.mkdir(exist_ok=True)
+
+    configure_compatibility(target / "wrangler.jsonc", compat_config)
+
+    pywrangler_sync(target, os.environ | {"_PYODIDE_EXTRA_MOUNTS": str(tmp_path)})
+
+    modules = embed(target / "python_modules", target, level=1) + embed(
+        target / "tests", target, level=1
+    )
+
+    python_modules = ",\n".join(modules) + ",\n"
+    wd_config = target / wd_test_file
+    wd_config.write_text(
+        wd_config.read_text()
+        .replace("%PYTHON_MODULES", python_modules)
+        .replace("%COLOR", str(color).lower())
+        .replace("%COMPAT_DATE", compat_date)
+    )
+    configure_compatibility(wd_config, compat_config)
+
+    workerd_bin = resolve_workerd(target)
+    workerd_common = [
+        workerd_bin,
+        "test",
+        wd_test_file,
+        "--experimental",
+        "--python-snapshot-dir",
+        ".",
+        f"-d{DISK_SERVICE_NAME}={disk_service_dir}",
+        "--pyodide-bundle-disk-cache-dir",
+        bundle_cache_dir / compat_config.python_version,
+    ]
+    subprocess.run(
+        [
+            *workerd_common,
+            "--python-save-snapshot",
+        ],
+        cwd=target,
+        check=True,
+    )
+    subprocess.run(
+        [
+            *workerd_common,
+            "--python-load-snapshot",
+            "snapshot.bin",
+        ],
+        cwd=target,
+        check=True,
+    )

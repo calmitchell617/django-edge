@@ -1,0 +1,541 @@
+# CHANGELOG
+
+<!-- version list -->
+
+## v1.17.8 (2026-10-16)
+
+### Bug Fixes
+
+- Make wrangler version check more robust
+  ([#291](https://github.com/cloudflare/workers-py/pull/291),
+  [`b4730bc`](https://github.com/cloudflare/workers-py/commit/b4730bc526601a28931996ce8f7fe10415a54752))
+
+
+## v1.17.7 (2026-10-06)
+
+### Bug Fixes
+
+- Unify license to MIT and include license file in dists
+  ([#285](https://github.com/cloudflare/workers-py/pull/285),
+  [`253f3d5`](https://github.com/cloudflare/workers-py/commit/253f3d5bb9194023a9dfcc7da6051df2964b628b))
+
+
+## v1.17.6 (2026-10-01)
+
+### Bug Fixes
+
+- Reject dev --remote command ([#278](https://github.com/cloudflare/workers-py/pull/278),
+  [`a3d7508`](https://github.com/cloudflare/workers-py/commit/a3d7508a458b0ff1a18810d8325446cc27af64cc))
+
+
+## v1.17.5 (2026-09-29)
+
+### Bug Fixes
+
+- Sync packages when running the new preview command
+  ([#273](https://github.com/cloudflare/workers-py/pull/273),
+  [`3aebc4a`](https://github.com/cloudflare/workers-py/commit/3aebc4ab25e916bb358067e3a0fa6da310b787bc))
+
+
+## v1.17.4 (2026-09-21)
+
+### Bug Fixes
+
+- Allow pywrangler sync to build path-based dependencies
+  ([`4736037`](https://github.com/cloudflare/workers-py/commit/47360379c5c61352792759ae9788c8a994846d4a))
+
+
+## v1.17.3 (2026-09-15)
+
+### Bug Fixes
+
+- Update package index to use pyodide 314.0.7
+  ([#256](https://github.com/cloudflare/workers-py/pull/256),
+  [`f89851b`](https://github.com/cloudflare/workers-py/commit/f89851bd8329f75f64e58dc7eb046fbee0d7baac))
+
+
+## v1.17.2 (2026-09-07)
+
+### Bug Fixes
+
+- Update Pyodide index version for Python 3.14 to 314.0.6
+  ([#246](https://github.com/cloudflare/workers-py/pull/246),
+  [`2282412`](https://github.com/cloudflare/workers-py/commit/22824122dd8b67b2534e3176a0c3b4539ac5a6cc))
+
+
+## v1.17.1 (2026-08-31)
+
+### Bug Fixes
+
+- Update compat flag and enable date for python 3.14
+  ([#235](https://github.com/cloudflare/workers-py/pull/235),
+  [`0ece5a2`](https://github.com/cloudflare/workers-py/commit/0ece5a2589513fd7f1d085bb33a4b0c1217e345a))
+
+
+## v1.17.0 (2026-08-28)
+
+### Features
+
+- Make pywrangler respect uv.sources from pyproject.toml
+  ([#234](https://github.com/cloudflare/workers-py/pull/234),
+  [`33e1bdc`](https://github.com/cloudflare/workers-py/commit/33e1bdcdaa531dc4ac0975619f4a517d98bceace))
+
+
+## v1.16.7 (2026-08-22)
+
+### Bug Fixes
+
+- Mark 314 experimental again ([#223](https://github.com/cloudflare/workers-py/pull/223),
+  [`9fab1ff`](https://github.com/cloudflare/workers-py/commit/9fab1ff63973d4d4af2b0165eb62d5206793ba3b))
+
+- Remove enable date from Python 3.14 ([#223](https://github.com/cloudflare/workers-py/pull/223),
+  [`9fab1ff`](https://github.com/cloudflare/workers-py/commit/9fab1ff63973d4d4af2b0165eb62d5206793ba3b))
+
+
+## v1.16.6 (2026-08-21)
+
+### Bug Fixes
+
+- Fix calculating host python path on windows
+  ([#213](https://github.com/cloudflare/workers-py/pull/213),
+  [`47fbc48`](https://github.com/cloudflare/workers-py/commit/47fbc480e20c3fe838a286308835dd20bcf696c7))
+
+
+## v1.16.5 (2026-08-19)
+
+### Bug Fixes
+
+- Fix calculating host python path on windows
+  ([#214](https://github.com/cloudflare/workers-py/pull/214),
+  [`5e62574`](https://github.com/cloudflare/workers-py/commit/5e6257444a65d9404aaa77cd9316524fd3551df4))
+
+
+## v1.16.4 (2026-08-13)
+
+### Bug Fixes
+
+- Bump minimum uv version
+  ([`8ffe0ea`](https://github.com/cloudflare/workers-py/commit/8ffe0ea098c7cf5f7143a27478d32087b126a082))
+
+
+## v1.16.3 (2026-08-13)
+
+### Bug Fixes
+
+- Add default enable date for 3.14 and remove experimental
+  ([`71ec08d`](https://github.com/cloudflare/workers-py/commit/71ec08de9c794cf47ab0183bfd441752a48a14ba))
+
+
+## v1.16.2 (2026-08-04)
+
+### Bug Fixes
+
+- Fix host python path being used when running uv commands
+  ([#178](https://github.com/cloudflare/workers-py/pull/178),
+  [`789c29e`](https://github.com/cloudflare/workers-py/commit/789c29e7eb1691f1afd90a8ee76a7f3220ba26a9))
+
+- Prevent host python path being used when running uv commands
+  ([#178](https://github.com/cloudflare/workers-py/pull/178),
+  [`789c29e`](https://github.com/cloudflare/workers-py/commit/789c29e7eb1691f1afd90a8ee76a7f3220ba26a9))
+
+
+## v1.16.1 (2026-07-31)
+
+### Bug Fixes
+
+- Force --color never on the parsed uv pip freeze output
+  ([#171](https://github.com/cloudflare/workers-py/pull/171),
+  [`000ac1e`](https://github.com/cloudflare/workers-py/commit/000ac1e2d13bb47ea2b4ae2698be0aa27aa9d265))
+
+
+## v1.16.0 (2026-07-27)
+
+### Features
+
+- Add experimental python 314 support ([#129](https://github.com/cloudflare/workers-py/pull/129),
+  [`cfe5327`](https://github.com/cloudflare/workers-py/commit/cfe5327ed207df07f4c958dd81b0b1cd45ed0d6c))
+
+- Update minimum required wrangler version to 4.109.0
+  ([#129](https://github.com/cloudflare/workers-py/pull/129),
+  [`cfe5327`](https://github.com/cloudflare/workers-py/commit/cfe5327ed207df07f4c958dd81b0b1cd45ed0d6c))
+
+
+## v1.15.0 (2026-07-08)
+
+### Features
+
+- Add --allow-build flag & tool.pywrangler setting
+  ([#144](https://github.com/cloudflare/workers-py/pull/144),
+  [`19fe5f1`](https://github.com/cloudflare/workers-py/commit/19fe5f171e7a7773a9e277e81c152bf9aac9cf49))
+
+
+## v1.14.1 (2026-07-08)
+
+### Bug Fixes
+
+- Relax required-python version to support Python 3.11
+  ([#149](https://github.com/cloudflare/workers-py/pull/149),
+  [`31d0f69`](https://github.com/cloudflare/workers-py/commit/31d0f696b2f64daf27ef629242957dff96bdde81))
+
+
+## v1.14.0 (2026-06-15)
+
+### Features
+
+- **runtime-sdk**: Revise type conversion for Durable Object binding
+  ([#112](https://github.com/cloudflare/workers-py/pull/112),
+  [`b12650e`](https://github.com/cloudflare/workers-py/commit/b12650ef91bb71f4ebebd9827bad2d1f0946fd62))
+
+- **runtime-sdk**: Revise type conversion to support bindings more natively
+  ([#112](https://github.com/cloudflare/workers-py/pull/112),
+  [`b12650e`](https://github.com/cloudflare/workers-py/commit/b12650ef91bb71f4ebebd9827bad2d1f0946fd62))
+
+- **runtime-sdk**: Update js object conversion logic to support cloudflare bindings more natively.
+  ([#112](https://github.com/cloudflare/workers-py/pull/112),
+  [`b12650e`](https://github.com/cloudflare/workers-py/commit/b12650ef91bb71f4ebebd9827bad2d1f0946fd62))
+
+
+## v1.13.0 (2026-06-15)
+
+### Features
+
+- Add lockfile support to pywrangler sync command
+  ([#108](https://github.com/cloudflare/workers-py/pull/108),
+  [`4844aea`](https://github.com/cloudflare/workers-py/commit/4844aea44005052054b2d5ff5022b3dcd5ab4c49))
+
+
+## v1.12.0 (2026-06-12)
+
+### Features
+
+- Implements cf accessor on Request
+  ([`5777f80`](https://github.com/cloudflare/workers-py/commit/5777f80ead8d9a3c452fe3b6b8f2dc041d6c80d3))
+
+
+## v1.11.0 (2026-06-03)
+
+### Features
+
+- Reverts #117
+  ([`973379e`](https://github.com/cloudflare/workers-py/commit/973379ea67188275f28387b7d22d5bbdcf61fe06))
+
+
+## v1.10.0 (2026-06-02)
+
+### Features
+
+- Update Python 3.13 package index from Pyodide 0.28.3 to 0.29.3
+  ([#117](https://github.com/cloudflare/workers-py/pull/117),
+  [`9c322af`](https://github.com/cloudflare/workers-py/commit/9c322af22c29223d2452fa532cfeae27d9ee0767))
+
+
+## v1.9.5 (2026-06-01)
+
+### Bug Fixes
+
+- Don't install Pyodide interpreter onto user's PATH
+  ([#115](https://github.com/cloudflare/workers-py/pull/115),
+  [`e6e78c4`](https://github.com/cloudflare/workers-py/commit/e6e78c4f22dd1219ac1e4c83cb57f3cb2b997d9b))
+
+
+## v1.9.4 (2026-05-19)
+
+### Bug Fixes
+
+- Wrap DurableObject.abort() so that python cleanup can be done before abort
+  ([#106](https://github.com/cloudflare/workers-py/pull/106),
+  [`bf6acf2`](https://github.com/cloudflare/workers-py/commit/bf6acf24429fb1525f34334ff2cefffa45b287ef))
+
+- **runtime-sdk**: Wrap DO.abort() to cleanup stale tasks before abortion
+  ([#106](https://github.com/cloudflare/workers-py/pull/106),
+  [`bf6acf2`](https://github.com/cloudflare/workers-py/commit/bf6acf24429fb1525f34334ff2cefffa45b287ef))
+
+
+## v1.9.3 (2026-04-22)
+
+### Bug Fixes
+
+- **workers-py**: Bust cache if workers-py version changes
+  ([#95](https://github.com/cloudflare/workers-py/pull/95),
+  [`9804681`](https://github.com/cloudflare/workers-py/commit/9804681956585c6e017aeda53924561116dccaf7))
+
+
+## v1.9.2 (2026-04-02)
+
+### Bug Fixes
+
+- Do not include stale packages in the bundle
+  ([#88](https://github.com/cloudflare/workers-py/pull/88),
+  [`6e7c384`](https://github.com/cloudflare/workers-py/commit/6e7c384e8a76669580305ea5bfe1e63b3208efb6))
+
+- **workers-py**: Do not include stale packages in the bundle
+  ([#88](https://github.com/cloudflare/workers-py/pull/88),
+  [`6e7c384`](https://github.com/cloudflare/workers-py/commit/6e7c384e8a76669580305ea5bfe1e63b3208efb6))
+
+
+## v1.9.1 (2026-03-18)
+
+### Bug Fixes
+
+- Fix Python ASGI adaptor to handle streaming responses correctly
+  ([#82](https://github.com/cloudflare/workers-py/pull/82),
+  [`d3ea87a`](https://github.com/cloudflare/workers-py/commit/d3ea87aff37c7a833f0602cc2a8018f1d5dde91b))
+
+- **workers-runtime-sdk**: Fix streaming responses in asgi module
+  ([#82](https://github.com/cloudflare/workers-py/pull/82),
+  [`d3ea87a`](https://github.com/cloudflare/workers-py/commit/d3ea87aff37c7a833f0602cc2a8018f1d5dde91b))
+
+
+## v1.9.0 (2026-03-12)
+
+### Features
+
+- Make workers cli install workers-runtime-sdk
+  ([#74](https://github.com/cloudflare/workers-py/pull/74),
+  [`a62f255`](https://github.com/cloudflare/workers-py/commit/a62f255e51555d212ecbb98f93e7145e251863f4))
+
+
+## v1.8.0 (2026-03-12)
+
+### Bug Fixes
+
+- Fix types in workers-runtime-sdk ([#73](https://github.com/cloudflare/workers-py/pull/73),
+  [`c46de58`](https://github.com/cloudflare/workers-py/commit/c46de58086d5f27341194fb48353bea7acc08312))
+
+
+## v1.0.0 (2026-03-12)
+
+- Initial Release
+
+## v1.7.3 (2026-02-09)
+
+### Bug Fixes
+
+- Ensure the same version is installed in host and pyodide venv
+  ([#59](https://github.com/cloudflare/workers-py/pull/59),
+  [`f85a938`](https://github.com/cloudflare/workers-py/commit/f85a938758d4e6ecffa14c20bd772ec7539a4d24))
+
+
+## v1.7.2 (2026-02-05)
+
+### Bug Fixes
+
+- Always pass string for subprocess env ([#65](https://github.com/cloudflare/workers-py/pull/65),
+  [`7a62ed6`](https://github.com/cloudflare/workers-py/commit/7a62ed6cd9518b404c8b6813f609e23b0d0c5621))
+
+
+## v1.7.1 (2026-02-03)
+
+### Bug Fixes
+
+- Better windows platform support ([#62](https://github.com/cloudflare/workers-py/pull/62),
+  [`53ce7be`](https://github.com/cloudflare/workers-py/commit/53ce7be9385f2aa07d8c43d5d3296d6328aafca7))
+
+
+## v1.7.0 (2025-10-31)
+
+### Features
+
+- Better errors when unsupported packages are requested
+  ([`e5000ed`](https://github.com/cloudflare/workers-py/commit/e5000eded90fb89c8f1a46dfb107f6d246f53e89))
+
+
+## v1.6.2 (2025-10-22)
+
+### Bug Fixes
+
+- Add workers-runtime-sdk as a dependency, update type test
+  ([#41](https://github.com/cloudflare/workers-py/pull/41),
+  [`f381505`](https://github.com/cloudflare/workers-py/commit/f381505e4c9b40ddb602928d964aa3fe38936e5c))
+
+
+## v1.6.1 (2025-10-15)
+
+### Bug Fixes
+
+- Be more lenient with wrangler version parsing
+  ([#45](https://github.com/cloudflare/workers-py/pull/45),
+  [`8315a03`](https://github.com/cloudflare/workers-py/commit/8315a03de83bff3836c84be28726bea7f6124dd8))
+
+
+## v1.6.0 (2025-10-15)
+
+### Features
+
+- Pywrangler init proxies to C3 directly with Python preselected
+  ([`8ec7724`](https://github.com/cloudflare/workers-py/commit/8ec7724c4768314cf5a6a4434cb0c33b95d3611f))
+
+
+## v1.5.1 (2025-10-13)
+
+### Bug Fixes
+
+- Fix default value for --outdir in help message
+  ([#39](https://github.com/cloudflare/workers-py/pull/39),
+  [`7aded7a`](https://github.com/cloudflare/workers-py/commit/7aded7a43580fc50b6408baee0184fa814481c9b))
+
+
+## v1.5.0 (2025-10-10)
+
+### Features
+
+- Implement pywrangler types to generate Python type stubs
+  ([#38](https://github.com/cloudflare/workers-py/pull/38),
+  [`39b67bd`](https://github.com/cloudflare/workers-py/commit/39b67bd24ed3916de12aa9025703ed18fe4a73cd))
+
+
+## v1.4.0 (2025-10-10)
+
+### Features
+
+- Adds wrangler version check
+  ([`ed41bcc`](https://github.com/cloudflare/workers-py/commit/ed41bccf24d5130b2c628edc7c3ece48edf14253))
+
+
+## v1.3.0 (2025-10-08)
+
+### Features
+
+- Implements python version detection based on wrangler config
+  ([`dec6e10`](https://github.com/cloudflare/workers-py/commit/dec6e10a8ff685feffbbd329d26a52212d83e0e3))
+
+
+## v1.2.1 (2025-10-07)
+
+### Bug Fixes
+
+- Add version check for uv ([#36](https://github.com/cloudflare/workers-py/pull/36),
+  [`f9b16ab`](https://github.com/cloudflare/workers-py/commit/f9b16ab2cd08b0c5afe7e10b053f982d3d536633))
+
+### Documentation
+
+- Update README.md to use `uv tool`
+  ([`14770ae`](https://github.com/cloudflare/workers-py/commit/14770aea1c2bc2dd052c7f162f8fc4192815c550))
+
+
+## v1.2.0 (2025-09-26)
+
+### Features
+
+- Use uv instead of pyodide-build to manage pyodide install and venv
+  ([#30](https://github.com/cloudflare/workers-py/pull/30),
+  [`1629919`](https://github.com/cloudflare/workers-py/commit/16299198db73f1e3efb99eb6ef928fc46978acd9))
+
+
+## v1.1.8 (2025-09-25)
+
+### Bug Fixes
+
+- Sync: Use a token that we write only after sync succeeds
+  ([#29](https://github.com/cloudflare/workers-py/pull/29),
+  [`64bc90a`](https://github.com/cloudflare/workers-py/commit/64bc90ac3832e094e096130f87992d0899e6b8fc))
+
+
+## v1.1.7 (2025-08-28)
+
+### Bug Fixes
+
+- Check for venv python version mismatch
+  ([`c7871f0`](https://github.com/cloudflare/workers-py/commit/c7871f07dcc2ad54f0cd9e0243ff5107cf43d9c9))
+
+
+## v1.1.6 (2025-08-27)
+
+### Bug Fixes
+
+- Sync: if nothing to do, only warn if user requested directly
+  ([#26](https://github.com/cloudflare/workers-py/pull/26),
+  [`e142800`](https://github.com/cloudflare/workers-py/commit/e142800306cf4a021c10c629814265ed63d9cd90))
+
+
+## v1.1.5 (2025-08-26)
+
+### Bug Fixes
+
+- Lock pyodide-build to fix running on Py 3.12
+  ([`2f301f4`](https://github.com/cloudflare/workers-py/commit/2f301f483be59ead2a799a0e8cba6291e428080b))
+
+
+## v1.1.4 (2025-08-06)
+
+### Bug Fixes
+
+- Allow overriding the python version ([#22](https://github.com/cloudflare/workers-py/pull/22),
+  [`e58114f`](https://github.com/cloudflare/workers-py/commit/e58114fd20f44b0358747a2b40652566ccc8486d))
+
+- Pass --yes to npx so it won't time out after 10 seconds if wrangler not installed
+  ([#20](https://github.com/cloudflare/workers-py/pull/20),
+  [`c80d5e5`](https://github.com/cloudflare/workers-py/commit/c80d5e58ec896fb3c494b7726d2f199defd7734b))
+
+
+## v1.1.3 (2025-07-31)
+
+### Bug Fixes
+
+- Fixes --version returning unknown version
+  ([`fa71797`](https://github.com/cloudflare/workers-py/commit/fa71797e23bb2b8263bfc8fc34c2a21c0677c8c3))
+
+
+## v1.1.2 (2025-07-28)
+
+### Bug Fixes
+
+- Mark python_modules as a virtual env dir
+  ([`e889742`](https://github.com/cloudflare/workers-py/commit/e88974297ace9511e0ca1abc6bf617ecb52cfb05))
+
+
+## v1.1.1 (2025-07-23)
+
+### Bug Fixes
+
+- Output relative path in package installation message
+  ([`4eecf36`](https://github.com/cloudflare/workers-py/commit/4eecf3604fe5edb16b3f0cd775cc8773cb1b608e))
+
+
+## v1.1.0 (2025-07-23)
+
+### Features
+
+- Renames vendor dir to `python_modules`
+  ([`01e5ab9`](https://github.com/cloudflare/workers-py/commit/01e5ab9f0280bf267c803d1e451a473fc5171864))
+
+
+## v1.0.4 (2025-06-20)
+
+### Bug Fixes
+
+- Use jsonc-parser for jsonc parsing to support multi-line comments
+  ([`229062d`](https://github.com/cloudflare/workers-py/commit/229062d717091b46010791f71df82e43a6323a5b))
+
+
+## v1.0.3 (2025-06-20)
+
+### Bug Fixes
+
+- Only look for pyproject.toml on `sync` command
+  ([`fd2eb1d`](https://github.com/cloudflare/workers-py/commit/fd2eb1db64c81f04334fc09634326e4287972b6a))
+
+
+## v1.0.2 (2025-06-18)
+
+### Bug Fixes
+
+- Expose release job outputs to deploy job
+  ([`116b8be`](https://github.com/cloudflare/workers-py/commit/116b8be6531dc91f2a2e869af9e1c667cc17862a))
+
+
+## v1.0.1 (2025-06-17)
+
+### Bug Fixes
+
+- Skip Upload Distribution Artifacts step on tagged commit
+  ([`06fafb0`](https://github.com/cloudflare/workers-py/commit/06fafb0e331dfa5744529889290d0afda01c3716))
+
+
+## v1.0.0 (2025-06-17)
+
+- Initial Release
+
+## v1.0.0 (2025-06-16)
+
+- Initial Release

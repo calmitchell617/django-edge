@@ -1,0 +1,166 @@
+import os
+from urllib.parse import urlsplit
+
+from testlib.entrypoint import run_pytest
+
+import asgi
+from workers import WorkerEntrypoint
+
+
+async def _drain_lifespan(receive, send):
+    message = await receive()
+    if message["type"] == "lifespan.startup":
+        await send({"type": "lifespan.startup.complete"})
+
+
+ws_events = []
+
+
+class WSWatchApp:
+    """Accepts and records the client's disconnect in ws_events."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            await _drain_lifespan(receive, send)
+            return
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                ws_events.append({"type": "disconnect", "code": message.get("code")})
+                return
+
+
+class WSEchoApp:
+    """Accepts and echoes each frame back tagged with the ASGI key it arrived
+    under ("bytes=" / "text=" prefix), so tests can detect frames delivered
+    under the wrong key (an untagged echo would bounce a mislabeled frame
+    opaquely and pass anyway)."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            await _drain_lifespan(receive, send)
+            return
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            if message.get("bytes") is not None:
+                await send(
+                    {"type": "websocket.send", "bytes": b"bytes=" + message["bytes"]}
+                )
+            else:
+                text = message.get("text")
+                # text is always str once frames are labeled correctly; repr()
+                # keeps a regression readable instead of timing out on a
+                # TypeError inside the app.
+                reply = "text=" + (text if isinstance(text, str) else repr(text))
+                await send({"type": "websocket.send", "text": reply})
+
+
+class WSEmptyFrameApp:
+    """On each client frame, replies with an empty text frame, an empty binary
+    frame, and a sentinel, so a test can tell whether empty frames reach the
+    client at all."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            await _drain_lifespan(receive, send)
+            return
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        while True:
+            message = await receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            await send({"type": "websocket.send", "text": ""})
+            await send({"type": "websocket.send", "bytes": b""})
+            await send({"type": "websocket.send", "text": "done"})
+
+
+class WSCloseApp:
+    """Closes the connection with an application-provided code and reason."""
+
+    async def __call__(self, scope, receive, send):
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        message = await receive()
+        if message["type"] == "websocket.disconnect":
+            return
+        await send(
+            {
+                "type": "websocket.close",
+                "code": 4001,
+                "reason": "application-close",
+            }
+        )
+
+
+class WSEnvApp:
+    """Sends a value supplied through the ASGI WebSocket scope environment."""
+
+    async def __call__(self, scope, receive, send):
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        message = await receive()
+        if message["type"] == "websocket.disconnect":
+            return
+        await send({"type": "websocket.send", "text": scope["env"]["marker"]})
+
+
+class WSCrashApp:
+    """Accepts, then raises: the server must close the transport (1011)."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            await _drain_lifespan(receive, send)
+            return
+        message = await receive()
+        assert message["type"] == "websocket.connect"
+        await send({"type": "websocket.accept"})
+        raise RuntimeError("websocket app crashed")
+
+
+ws_app = WSWatchApp()
+echo_app = WSEchoApp()
+empty_frame_app = WSEmptyFrameApp()
+close_app = WSCloseApp()
+env_app = WSEnvApp()
+crash_app = WSCrashApp()
+
+
+class Default(WorkerEntrypoint):
+    async def fetch(self, request):
+        if (request.headers.get("upgrade") or "").lower() == "websocket":
+            path = urlsplit(request.url).path
+            if path == "/ws-env":
+                return await asgi.websocket(
+                    env_app, request, {"marker": "worker-environment"}
+                )
+            app = {
+                "/ws-close": close_app,
+                "/ws-echo": echo_app,
+                "/ws-empty": empty_frame_app,
+                "/ws-crash": crash_app,
+            }.get(path, ws_app)
+            return await asgi.websocket(app, request)
+        import json
+
+        from workers import Response
+
+        return Response(
+            json.dumps(ws_events), headers={"content-type": "application/json"}
+        )
+
+    async def test(self):
+        os.chdir("/session/metadata/tests")
+        args = [".", "-vv"]
+        run_pytest(args)

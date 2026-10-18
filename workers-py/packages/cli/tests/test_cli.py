@@ -1,0 +1,1087 @@
+import logging
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from textwrap import dedent
+from unittest.mock import Mock, patch
+
+import pytest
+from click.testing import CliRunner
+
+import pywrangler.sync as pywrangler_sync
+import pywrangler.utils as pywrangler_utils
+
+# Import the full module so we can patch constants
+from pywrangler.cli import app
+
+
+# Helper function to check if a package is installed in a site-packages directory
+def is_package_installed(site_packages_path, package_name):
+    """Check if a package is installed in the given site-packages directory.
+
+    Args:
+        site_packages_path: Path to the site-packages directory
+        package_name: Name of the package to check for
+
+    Returns:
+        bool: True if the package is found, False otherwise
+    """
+    # Normalize package name (lowercase, remove dashes)
+    package_name_normalized = package_name.lower().replace("-", "_")
+
+    if not site_packages_path.exists():
+        print(f"{site_packages_path} does not exist")
+        return False
+
+    matches = list(site_packages_path.glob(f"*{package_name_normalized}*"))
+    if matches:
+        print(f"Found {package_name} as: {matches}")
+        return True
+
+    # If we get here, nothing was found
+    print(f"Could not find {package_name} in {site_packages_path}")
+    print(
+        f"Contents of site-packages: {[p.name for p in site_packages_path.iterdir()]}"
+    )
+    return False
+
+
+@pytest.fixture
+def test_dir(monkeypatch):
+    test_dir = Path(__file__).parent / "test_workspace"
+    shutil.rmtree(test_dir, ignore_errors=True)
+    (test_dir / "src").mkdir(parents=True)
+    monkeypatch.setattr(
+        pywrangler_utils, "find_pyproject_toml", lambda: test_dir / "pyproject.toml"
+    )
+    try:
+        yield test_dir.absolute()
+    finally:
+        shutil.rmtree(test_dir, ignore_errors=True)
+
+
+def create_test_pyproject(test_dir: Path, dependencies=None):
+    """Create a test pyproject.toml file with given dependencies."""
+    if dependencies is None:
+        dependencies = ["requests==2.28.1", "pydantic>=1.9.0,<2.0.0"]
+
+    content = dedent(f"""
+        [build-system]
+        requires = ["setuptools>=61.0"]
+        build-backend = "setuptools.build_meta"
+
+        [project]
+        name = "test-project"
+        version = "0.1.0"
+        description = "Test Project"
+        requires-python = ">=3.8"
+        dependencies = [
+            {",".join([f'"{dep}"' for dep in dependencies])}
+        ]
+    """)
+    (test_dir / "pyproject.toml").write_text(content)
+    return dependencies
+
+
+def _wrangler_compat_config(python_version: str) -> tuple[str, str]:
+    """Return (compat_flags_str, compat_date) for a given Python version."""
+    compat_flags = ["python_workers"]
+    if python_version == "3.13":
+        compat_flags.append("python_workers_20250116")
+    if python_version == "3.14":
+        compat_flags.append("python_workers_314")
+
+    compat_flags_str = ", ".join([f'"{flag}"' for flag in compat_flags])
+
+    compat_dates = {
+        "3.12": "2025-09-28",
+        "3.13": "2025-10-01",
+        "3.14": "2026-09-01",
+    }
+    compat_date = compat_dates.get(python_version, "2025-10-01")
+    return compat_flags_str, compat_date
+
+
+def create_test_wrangler_jsonc(
+    test_dir: Path, main_path="src/worker.py", python_version="3.13"
+):
+    compat_flags_str, compat_date = _wrangler_compat_config(python_version)
+
+    content = f"""
+    /**
+     * For more details on how to configure Wrangler, refer to:
+     * https://developers.cloudflare.com/workers/wrangler/configuration/
+     */
+    {{
+        // Name of the worker
+        "name": "test-worker",
+
+        // Main script to run
+        "main": "{main_path}",
+
+        // Compatibility date
+        "compatibility_date": "{compat_date}",
+
+        // Compatibility flags
+        "compatibility_flags": [{compat_flags_str}]
+    }}
+    """
+    (test_dir / "wrangler.jsonc").write_text(content)
+
+
+def create_test_wrangler_toml(
+    test_dir, main_path="dist/worker.js", python_version="3.13"
+):
+    compat_flags_str, compat_date = _wrangler_compat_config(python_version)
+
+    compat_dates = {
+        "3.12": "2025-09-28",
+        "3.13": "2025-10-01",
+        "3.14": "2026-08-28",
+    }
+    compat_date = compat_dates.get(python_version, "2025-10-01")
+
+    content = dedent(f"""
+        # Name of the worker
+        name = "test-worker-toml"
+
+        # Main script to run
+        main = "{main_path}"
+
+        # Compatibility date
+        compatibility_date = "{compat_date}"
+
+        # Compatibility flags
+        compatibility_flags = [{compat_flags_str}]
+    """)
+    (test_dir / "wrangler.toml").write_text(content)
+
+
+@pytest.mark.parametrize(
+    "dependencies",
+    [
+        ["click"],  # Simple single dependency
+        ["fastapi", "numpy"],
+        [],  # Empty dependency list
+    ],
+)
+def test_sync_command_integration(dependencies, test_dir):  # noqa: C901 (test complexity)
+    """Test the sync command with real commands running on the system."""
+    # Create a test pyproject.toml with dependencies
+    test_deps = create_test_pyproject(test_dir, dependencies)
+    test_deps.append("workers-runtime-sdk")
+
+    # Create a test wrangler.jsonc file
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+
+    # Get the absolute path to the package root
+    # Run the pywrangler CLI directly using uvx
+    print("\nRunning pywrangler sync...")
+    sync_cmd = ["uv", "run", "pywrangler", "sync"]
+
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    print(f"\nCommand output:\n{result.stdout}")
+    if result.stderr:
+        print(f"Command errors:\n{result.stderr}")
+
+    # Check that the command succeeded
+    assert result.returncode == 0, (
+        f"Script failed with output: {result.stdout}\nErrors: {result.stderr}"
+    )
+
+    # Verify the python_modules directory has the expected packages
+    TEST_SRC_VENDOR = test_dir / "python_modules"
+    if test_deps:
+        assert TEST_SRC_VENDOR.exists(), (
+            f"python_modules directory was not created at {TEST_SRC_VENDOR}"
+        )
+
+        for pkg in dependencies:
+            assert is_package_installed(TEST_SRC_VENDOR, pkg), (
+                f"Package {pkg} was not installed in {TEST_SRC_VENDOR}"
+            )
+
+    # If no dependencies, vendor dir might still be created but should be empty
+    elif TEST_SRC_VENDOR.exists() and TEST_SRC_VENDOR.is_dir():
+        # Allow for empty directories like __pycache__ that might be created
+        assert all(
+            d.name.startswith("__") for d in TEST_SRC_VENDOR.iterdir() if d.is_dir()
+        ), (
+            f"python_modules directory should be empty of packages but contains: {list(TEST_SRC_VENDOR.iterdir())}"
+        )
+
+    # Verify that pyvenv.cfg is created only when there are dependencies
+    if test_deps:
+        assert (TEST_SRC_VENDOR / "pyvenv.cfg").exists(), (
+            f"pyvenv.cfg was not created in {TEST_SRC_VENDOR}"
+        )
+
+    # Check .venv-workers directory exists and has the expected packages
+    TEST_VENV_WORKERS = test_dir / ".venv-workers"
+    assert TEST_VENV_WORKERS.exists(), (
+        f".venv-workers directory was not created at {TEST_VENV_WORKERS}"
+    )
+
+    # Check that packages were installed in .venv-workers
+    if os.name == "nt":
+        site_packages_path = TEST_VENV_WORKERS / "Lib" / "site-packages"
+    else:
+        site_packages_path = TEST_VENV_WORKERS / "lib" / "python3.13" / "site-packages"
+    assert site_packages_path.exists(), (
+        "site-packages directory does not exist in .venv-workers"
+    )
+
+    # Check that pyodide-py is installed (should always be installed, even if no deps are specified)
+    assert is_package_installed(site_packages_path, "pyodide-py"), (
+        "pyodide-py package was not installed in .venv-workers"
+    )
+
+    # Check that all dependencies from pyproject.toml are installed
+    for dep in dependencies:
+        assert is_package_installed(site_packages_path, dep), (
+            f"Package {dep} was not installed in .venv-workers"
+        )
+
+    if test_deps:
+        vendor_freeze_result = subprocess.run(
+            ["uv", "pip", "freeze", "--path", str(TEST_SRC_VENDOR)],
+            capture_output=True,
+            text=True,
+            cwd=test_dir,
+            check=True,
+            env=os.environ
+            | {"VIRTUAL_ENV": str(test_dir / ".venv-workers" / "pyodide-venv")},
+        )
+        vendor_packages = {
+            line.split("==")[0]: line.split("==")[1]
+            for line in vendor_freeze_result.stdout.strip().split("\n")
+            if line and "==" in line
+        }
+
+        venv_freeze_result = subprocess.run(
+            ["uv", "pip", "freeze", "--path", str(site_packages_path)],
+            capture_output=True,
+            text=True,
+            cwd=test_dir,
+            check=True,
+            env=os.environ | {"VIRTUAL_ENV": str(TEST_VENV_WORKERS)},
+        )
+        venv_packages = {
+            line.split("==")[0]: line.split("==")[1]
+            for line in venv_freeze_result.stdout.strip().split("\n")
+            if line and "==" in line
+        }
+
+        for pkg_name, vendor_version in vendor_packages.items():
+            if pkg_name.lower().startswith("pyodide"):
+                continue
+
+            assert pkg_name in venv_packages, (
+                f"Package {pkg_name} found in vendor but not in venv"
+            )
+            venv_version = venv_packages[pkg_name]
+            assert vendor_version == venv_version, (
+                f"Version mismatch for {pkg_name}: "
+                f"vendor has {vendor_version}, "
+                f"venv has {venv_version}"
+            )
+
+
+def test_sync_removes_stale_packages(test_dir):
+    """Test that removing a dependency from pyproject.toml cleans it up from python_modules."""
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+    sync_cmd = ["uv", "run", "pywrangler", "sync"]
+
+    # First sync: install click + six
+    create_test_pyproject(test_dir, ["click", "six"])
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    assert result.returncode == 0, (
+        f"First sync failed: {result.stdout}\n{result.stderr}"
+    )
+
+    vendor_path = test_dir / "python_modules"
+    assert is_package_installed(vendor_path, "click")
+    assert is_package_installed(vendor_path, "six")
+
+    # Second sync: remove six, keep click
+    create_test_pyproject(test_dir, ["click"])
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    assert result.returncode == 0, (
+        f"Second sync failed: {result.stdout}\n{result.stderr}"
+    )
+
+    assert is_package_installed(vendor_path, "click"), (
+        "click should still be installed after second sync"
+    )
+    assert not is_package_installed(vendor_path, "six"), (
+        "six should have been removed from python_modules after being dropped from dependencies"
+    )
+
+
+def test_sync_lockfile_lifecycle(test_dir):
+    """Test that pylock.toml pins versions and --upgrade refreshes them."""
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+    sync_cmd = ["uv", "run", "pywrangler", "sync"]
+    lockfile = test_dir / "pylock.toml"
+    vendor_path = test_dir / "python_modules"
+
+    old_six = "six==1.16.0"
+    latest_six = "six>=1.16.0"
+
+    # Step 1: Initial sync with old six — creates pylock.toml pinned to 1.16.0
+    create_test_pyproject(test_dir, [old_six])
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    assert result.returncode == 0, f"Step 1 failed: {result.stdout}\n{result.stderr}"
+    assert lockfile.is_file(), "pylock.toml should be created after first sync"
+    assert is_package_installed(vendor_path, "six")
+    lockfile_content = lockfile.read_text()
+    assert 'version = "1.16.0"' in lockfile_content
+
+    # Step 2: Add click to pyproject.toml, rerun sync — pylock.toml adds click, six stays 1.16.0
+    create_test_pyproject(test_dir, [old_six, "click"])
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    assert result.returncode == 0, f"Step 2 failed: {result.stdout}\n{result.stderr}"
+    lockfile_content = lockfile.read_text()
+    assert "click" in lockfile_content
+    assert 'version = "1.16.0"' in lockfile_content, (
+        "six should remain pinned to 1.16.0 when adding a new dep"
+    )
+    assert is_package_installed(vendor_path, "click")
+    assert is_package_installed(vendor_path, "six")
+
+    # Step 3: Rerun sync without changes — no update (skipped by timestamp check)
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+    assert result.returncode == 0, f"Step 3 failed: {result.stdout}\n{result.stderr}"
+    assert lockfile.read_text() == lockfile_content, (
+        "pylock.toml should not change when rerunning sync without changes"
+    )
+
+    # Step 4: Loosen six constraint and sync with --upgrade — six should upgrade past 1.16.0
+    create_test_pyproject(test_dir, [latest_six, "click"])
+    result = subprocess.run(
+        [*sync_cmd, "--force", "--upgrade"],
+        capture_output=True,
+        text=True,
+        cwd=test_dir,
+        check=False,
+    )
+    assert result.returncode == 0, f"Step 4 failed: {result.stdout}\n{result.stderr}"
+    lockfile_content = lockfile.read_text()
+    assert 'version = "1.16.0"' not in lockfile_content, (
+        "six should have been upgraded past 1.16.0 with --upgrade"
+    )
+    assert is_package_installed(vendor_path, "click")
+    assert is_package_installed(vendor_path, "six")
+
+
+def create_dummy_build_dep(parent_dir: Path, name: str = "dummy-build-dep") -> Path:
+    """Create a tiny pure-Python dependency that must be built from source.
+
+    The package only exists as a local directory (no prebuilt wheel on any
+    index), so installing it requires ``uv`` to run its build backend. Local
+    path sources are the one kind of source ``sync`` builds even without
+    ``--allow-build``.
+
+    Returns the path to the created dependency directory.
+    """
+    module_name = name.replace("-", "_")
+    dep_dir = parent_dir / module_name
+    (dep_dir / module_name).mkdir(parents=True)
+
+    (dep_dir / "pyproject.toml").write_text(
+        dedent(f"""
+            [build-system]
+            requires = ["setuptools>=61.0"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "{name}"
+            version = "0.1.0"
+            description = "A tiny dummy dependency built from source"
+            requires-python = ">=3.8"
+        """)
+    )
+    (dep_dir / module_name / "__init__.py").write_text(
+        'MESSAGE = "hello from dummy build dep"\n'
+    )
+    return dep_dir
+
+
+def create_worker_pyproject_with_local_dep(
+    test_dir: Path, dep_dir: Path, dep_name: str, *, allow_build_config: bool = False
+) -> None:
+    """Write a worker pyproject.toml that depends on a local directory source.
+
+    The dependency is expressed as a PEP 508 direct reference to the local
+    directory (``name @ file://...``) so the resolver treats it as a
+    ``directory`` source that must be built. ``allow_build_config`` toggles the
+    ``[tool.pywrangler] allow-build`` key.
+    """
+    pywrangler_table = (
+        "[tool.pywrangler]\nallow-build = true\n" if allow_build_config else ""
+    )
+    content = dedent(f"""
+        [build-system]
+        requires = ["setuptools>=61.0"]
+        build-backend = "setuptools.build_meta"
+
+        [project]
+        name = "test-project"
+        version = "0.1.0"
+        description = "Test Project"
+        requires-python = ">=3.8"
+        dependencies = ["{dep_name} @ {dep_dir.as_uri()}"]
+
+        {pywrangler_table}
+    """)
+    (test_dir / "pyproject.toml").write_text(content)
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="FIXME Pyodide WASM interpreter cannot run setuptools build backends on Windows",
+)
+@pytest.mark.parametrize(
+    "extra_args", [[], ["--no-allow-build"]], ids=["default", "explicit"]
+)
+def test_sync_builds_local_directory_dependency(test_dir, extra_args):
+    """End-to-end test: local directory sources are built without --allow-build.
+
+    A tiny dummy package that only exists as a local directory (and therefore
+    must be built from source) is added to the worker's pyproject.toml. Unlike
+    source distributions from an index, which stay blocked so uv can't pick a
+    newer sdist over an older Pyodide wheel, a local path source is something
+    the project explicitly asked for, so `sync` builds it.
+    """
+    dep_name = "dummy-build-dep"
+    dep_dir = create_dummy_build_dep(test_dir, dep_name)
+    create_worker_pyproject_with_local_dep(test_dir, dep_dir, dep_name)
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+
+    vendor_path = test_dir / "python_modules"
+    result = subprocess.run(
+        ["uv", "run", "pywrangler", "sync", *extra_args],
+        capture_output=True,
+        text=True,
+        cwd=test_dir,
+        check=False,
+    )
+    assert result.returncode == 0, f"sync failed: {result.stdout}\n{result.stderr}"
+    assert is_package_installed(vendor_path, dep_name), (
+        f"{dep_name} should be built and vendored into python_modules"
+    )
+
+
+def test_sync_reads_allow_build_from_pyproject_config(test_dir):
+    """`sync()` falls back to `[tool.pywrangler] allow-build` when no flag is passed."""
+    dep_name = "dummy-build-dep"
+    dep_dir = create_dummy_build_dep(test_dir, dep_name)
+    create_worker_pyproject_with_local_dep(
+        test_dir, dep_dir, dep_name, allow_build_config=True
+    )
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+
+    with (
+        patch.object(pywrangler_sync, "check_requirements_txt"),
+        patch.object(pywrangler_sync, "create_workers_venv"),
+        patch.object(pywrangler_sync, "create_pyodide_venv"),
+        patch.object(pywrangler_sync, "resolve_requirements") as mock_resolve,
+        patch.object(pywrangler_sync, "install_requirements") as mock_install,
+    ):
+        pywrangler_sync.sync(force=True)
+
+    assert mock_resolve.call_args.kwargs["allow_build"] is True
+    assert mock_install.call_args.kwargs["allow_build"] is True
+
+
+def test_sync_command_handles_missing_pyproject():
+    """Test that the sync command correctly handles a missing pyproject.toml file."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Create a wrangler config but don't create pyproject.toml file
+        wrangler_jsonc = temp_path / "wrangler.jsonc"
+        wrangler_jsonc.write_text("""
+        {
+            "name": "test-worker",
+            "main": "src/worker.py",
+            "compatibility_date": "2025-10-01",
+            "compatibility_flags": ["python_workers"]
+        }
+        """)
+
+        assert not (temp_path / "pyproject.toml").exists()
+
+        # Run pywrangler sync from the temp directory (should fail)
+        sync_cmd = ["uv", "run", "pywrangler", "sync"]
+
+        result = subprocess.run(
+            sync_cmd, capture_output=True, text=True, cwd=temp_path, check=False
+        )
+
+        # Check that the command failed with the expected error
+        assert result.returncode != 0
+
+        # Check that the error was logged
+        assert "pyproject.toml not found" in result.stdout
+
+
+@patch.object(pywrangler_sync, "is_sync_needed", lambda: False)
+@patch.object(pywrangler_sync, "install_requirements")
+def test_sync_command_with_unchanged_timestamps(
+    mock_install_requirements, test_dir, caplog
+):
+    """Test that the sync command skips sync when timestamps indicate no change."""
+
+    # Create the pyproject.toml file
+    create_test_pyproject(test_dir)
+
+    # Create a wrangler.jsonc file
+    create_test_wrangler_jsonc(test_dir)
+
+    # Use the Click test runner to invoke the command
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync"])
+
+    # Check that the command succeeded
+    assert result.exit_code == 0
+
+    # Verify that none of the sync functions were called
+    mock_install_requirements.assert_not_called()
+
+
+@patch.object(pywrangler_sync, "is_sync_needed", lambda: True)
+@patch.object(pywrangler_sync, "install_requirements")
+def test_sync_command_with_changed_timestamps(
+    mock_install_requirements,
+    test_dir,
+    caplog,
+):
+    """Test that the sync command runs when timestamps indicate changes."""
+    # Create the pyproject.toml file
+    create_test_pyproject(test_dir)
+
+    # Create a wrangler.jsonc file
+    create_test_wrangler_jsonc(test_dir)
+
+    # Use the Click test runner to invoke the command
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync"])
+
+    # Check that the command succeeded
+    assert result.exit_code == 0
+
+    # Verify that all the sync functions were called
+    mock_install_requirements.assert_called_once()
+
+
+@patch.object(pywrangler_sync, "is_sync_needed", lambda: False)
+@patch.object(pywrangler_sync, "install_requirements")
+@patch.object(pywrangler_sync, "resolve_requirements")
+def test_sync_command_with_force_flag(
+    mock_resolve,
+    mock_install_requirements,
+    test_dir,
+    caplog,
+):
+    """Test that the sync command runs when the --force flag is used, regardless of timestamps."""
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir)
+
+    # Use the Click test runner to invoke the command with --force
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync", "--force"])
+
+    # Check that the command succeeded
+    assert result.exit_code == 0
+
+    # Verify that all the sync functions were called despite the timestamp check
+    mock_install_requirements.assert_called_once()
+
+
+def test_sync_command_handles_missing_wrangler_config(test_dir, caplog):
+    """Test that the sync command correctly handles missing wrangler configuration files."""
+    # Create a pyproject.toml file but don't create wrangler config files
+    create_test_pyproject(test_dir)
+    assert (test_dir / "pyproject.toml").exists()
+    assert not (test_dir / "wrangler.jsonc").exists()
+    assert not (test_dir / "wrangler.toml").exists()
+
+    # Use the Click test runner to invoke the command
+    runner = CliRunner()
+    result = runner.invoke(app, ["sync"])
+
+    # Check that the command failed with the expected error
+    assert result.exit_code != 0
+
+    # Check that the error was logged - looking for messages about missing wrangler config
+    assert "wrangler.jsonc" in caplog.text
+    assert "not found" in caplog.text
+
+
+def test_debug_flag(test_dir, caplog):
+    """Test that the --debug flag enables debug output."""
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir)
+
+    # Run the command with --debug flag
+    runner = CliRunner()
+    runner.invoke(app, ["--debug", "sync"])
+
+    # Check that debug logs were generated
+    debug_logs = [
+        record for record in caplog.records if record.levelno == logging.DEBUG
+    ]
+
+    # Verify that debug logs are present
+    assert len(debug_logs) > 0, "No debug logs were produced when using --debug flag"
+
+
+@patch("pywrangler.cli._proxy_to_wrangler")
+@patch("sys.argv", ["pywrangler", "unknown_command", "--some-flag", "value"])
+def test_proxy_to_wrangler_unknown_command(mock_proxy_to_wrangler):
+    """Test that unknown commands are proxied to wrangler."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["unknown_command", "--some-flag", "value"])
+
+    # Should exit with 0 (from mocked process)
+    assert result.exit_code == 0
+
+    # Verify _proxy_to_wrangler was called with correct arguments
+    mock_proxy_to_wrangler.assert_called_once_with(
+        "unknown_command", ["--some-flag", "value"]
+    )
+
+
+@patch("pywrangler.utils.check_wrangler_version")
+@patch("pywrangler.cli._proxy_to_wrangler")
+@patch("pywrangler.cli.sync")
+@patch("sys.argv", ["pywrangler", "dev", "--local"])
+def test_proxy_auto_sync_commands(
+    mock_sync_command, mock_proxy_to_wrangler, mock_check_wrangler_version
+):
+    """Test that dev, publish, and deploy commands automatically run sync first."""
+    runner = CliRunner()
+
+    # Test dev command
+    result = runner.invoke(app, ["dev", "--local"])
+    assert result.exit_code == 0
+
+    # Verify sync was called
+    mock_sync_command.assert_called_once()
+
+    # Verify _proxy_to_wrangler was called with correct arguments
+    mock_proxy_to_wrangler.assert_called_once_with("dev", ["--local"])
+
+
+@pytest.mark.parametrize(
+    "remote_args",
+    [
+        ["--remote"],
+        ["-r"],
+        ["--port", "8787", "--remote"],
+        ["--remote=true"],
+        ["--remote", "true"],
+    ],
+)
+@patch("pywrangler.utils.check_wrangler_version")
+@patch("pywrangler.cli._proxy_to_wrangler")
+@patch("pywrangler.cli.sync")
+def test_dev_remote_is_rejected(
+    mock_sync_command,
+    mock_proxy_to_wrangler,
+    mock_check_wrangler_version,
+    remote_args,
+    caplog,
+):
+    with patch("sys.argv", ["pywrangler", "dev", *remote_args]):
+        result = CliRunner().invoke(app, ["dev", *remote_args])
+
+    assert result.exit_code == 1
+    assert "remote bindings" in caplog.text
+    mock_sync_command.assert_not_called()
+    mock_proxy_to_wrangler.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "args", [["--remote", "false"], ["-r", "false"], ["--remote=false"]]
+)
+@patch("pywrangler.utils.check_wrangler_version")
+@patch("pywrangler.cli._proxy_to_wrangler")
+@patch("pywrangler.cli.sync")
+def test_dev_remote_disabled_is_proxied(
+    mock_sync_command, mock_proxy_to_wrangler, mock_check_wrangler_version, args
+):
+    with patch("sys.argv", ["pywrangler", "dev", *args]):
+        result = CliRunner().invoke(app, ["dev", *args])
+
+    assert result.exit_code == 0
+    mock_proxy_to_wrangler.assert_called_once_with("dev", args)
+
+
+@patch("pywrangler.cli._proxy_to_wrangler")
+@patch("sys.argv", ["pywrangler", "d1", "execute", "db", "--remote"])
+def test_remote_flag_allowed_for_non_dev_commands(mock_proxy_to_wrangler):
+    result = CliRunner().invoke(app, ["d1", "execute", "db", "--remote"])
+
+    assert result.exit_code == 0
+    mock_proxy_to_wrangler.assert_called_once_with("d1", ["execute", "db", "--remote"])
+
+
+@patch("pywrangler.cli.subprocess.run")
+def test_proxy_to_wrangler_handles_subprocess_error(mock_subprocess_run):
+    """Test that subprocess errors are handled gracefully."""
+    # Mock subprocess.run to raise FileNotFoundError
+    mock_subprocess_run.side_effect = FileNotFoundError()
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["unknown_command"])
+
+    # Should exit with 1 (error code)
+    assert result.exit_code == 1
+
+    # Verify the error was attempted to be called.
+    mock_subprocess_run.assert_called_once()
+    call_args = mock_subprocess_run.call_args
+    cmd = call_args[0][0]
+    assert cmd[0].lower().startswith("npx")
+    assert cmd[1:] == ["--yes", "wrangler", "unknown_command"]
+    assert call_args[1] == {
+        "check": False,
+        "cwd": Path("."),
+        "env": None,
+        "text": True,
+        "encoding": "utf-8",
+    }
+
+
+@pytest.mark.xfail(reason="re-enable when 3.14 gets enable date")
+def test_sync_command_finds_pyproject_in_parent_directory(test_dir):
+    """Test that the sync command can find pyproject.toml in a parent directory."""
+    # Create pyproject.toml in the test directory (parent)
+    create_test_pyproject(test_dir, ["click"])
+    create_test_wrangler_jsonc(test_dir, "src/worker.py")
+
+    # Create a subdirectory and change to it
+    subdir = test_dir / "subproject"
+    subdir.mkdir()
+
+    # Run the pywrangler CLI from the subdirectory
+    sync_cmd = ["uv", "run", "pywrangler", "sync"]
+
+    result = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=subdir, check=False
+    )
+    print(f"\nCommand output:\n{result.stdout}")
+    if result.stderr:
+        print(f"Command errors:\n{result.stderr}")
+
+    # Check that the command succeeded
+    assert result.returncode == 0, (
+        f"Script failed with output: {result.stdout}\nErrors: {result.stderr}"
+    )
+
+    # Verify the vendor directory was created in the parent directory (where pyproject.toml is)
+    TEST_SRC_VENDOR = test_dir / "python_modules"
+    assert TEST_SRC_VENDOR.exists(), (
+        f"python_modules directory was not created at {TEST_SRC_VENDOR}"
+    )
+
+    # Verify the .venv-workers directory was created in the parent directory
+    TEST_VENV_WORKERS = test_dir / ".venv-workers"
+    assert TEST_VENV_WORKERS.exists(), (
+        f".venv-workers directory was not created at {TEST_VENV_WORKERS}"
+    )
+
+
+def test_sync_recreates_venv_on_python_version_mismatch(test_dir):
+    """
+    Test that the sync command recreates the venv if the Python version
+    mismatches, using real system commands.
+    """
+    # Create initial files in the clean test directory
+    create_test_pyproject(test_dir)
+
+    sync_cmd = ["uv", "run", "pywrangler", "sync"]
+    venv_path = test_dir / ".venv-workers"
+
+    # First run: Create venv with Python 3.13
+    create_test_wrangler_jsonc(test_dir, python_version="3.13")
+    result1 = subprocess.run(
+        sync_cmd, capture_output=True, text=True, cwd=test_dir, check=False
+    )
+
+    assert result1.returncode == 0, (
+        f"First sync failed: {result1.stdout}\n{result1.stderr}"
+    )
+    assert venv_path.exists(), "Venv was not created on the first run."
+    initial_mtime = venv_path.stat().st_mtime
+
+    # Second run: Recreate venv with Python 3.14
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir, python_version="3.14")
+    # Use --force to ensure pylock.toml is recompiled for the new version
+    result2 = subprocess.run(
+        [*sync_cmd, "--force"],
+        capture_output=True,
+        text=True,
+        cwd=test_dir,
+        check=False,
+    )
+
+    assert result2.returncode == 0, (
+        f"Second sync failed: {result2.stdout}\n{result2.stderr}"
+    )
+    assert venv_path.exists(), "Venv was not recreated."
+    final_mtime = venv_path.stat().st_mtime
+
+    # Check that the venv was actually modified
+    assert final_mtime > initial_mtime, "Venv modification time did not change."
+
+    # Verify the python version in the new venv is 3.14.
+    python_exe = venv_path / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    version_result = subprocess.run(
+        [python_exe, "--version"],
+        capture_output=True,
+        text=True,
+        cwd=test_dir,
+        check=False,
+    )
+    assert "3.14" in version_result.stdout, (
+        f"Python version is not 3.14: {version_result.stdout}"
+    )
+
+
+# Wrangler version check tests
+@patch("pywrangler.utils.run_command")
+def test_check_wrangler_version_sufficient(mock_run_command):
+    """Test that check_wrangler_version passes with sufficient version."""
+    from pywrangler.utils import check_wrangler_version
+
+    # Mock successful wrangler version output
+    mock_result = Mock()
+    mock_result.returncode = 0
+    mock_result.stdout = "wrangler 4.127.1"
+    mock_run_command.return_value = mock_result
+
+    # Should not raise an exception
+    check_wrangler_version()
+
+    # Verify the command was called correctly
+    mock_run_command.assert_called_once_with(
+        ["npx", "--yes", "--silent", "wrangler", "--version"],
+        capture_output=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "4.148.0",
+        "\n ⛅️ wrangler 4.148.0\n────────────────────\n",
+        # npm might print notices before the version
+        # https://github.com/cloudflare/workers-py/issues/290
+        "npm notice run my-project@0.0.0 npx\nnpm notice run 'wrangler' --version\n"
+        "\n ⛅️ wrangler 4.148.0\n────────────────────\n",
+        "npm notice run my-project@0.0.0 npx\nnpm notice run 'wrangler' --version\n"
+        "4.148.0\n",
+    ],
+)
+@patch("pywrangler.utils.run_command")
+def test_check_wrangler_version_ignores_npm_notices(mock_run_command, stdout):
+    """Regression test for cloudflare/workers-py#290."""
+    from pywrangler.utils import check_wrangler_version
+
+    mock_result = Mock()
+    mock_result.returncode = 0
+    mock_result.stdout = stdout
+    mock_run_command.return_value = mock_result
+
+    check_wrangler_version()
+
+
+@patch("pywrangler.utils.run_command")
+def test_check_wrangler_version_insufficient(mock_run_command):
+    """Test that check_wrangler_version fails with insufficient version."""
+    from pywrangler.utils import check_wrangler_version
+
+    # Mock wrangler version output with old version
+    mock_result = Mock()
+    mock_result.returncode = 0
+    mock_result.stdout = "⛅️ wrangler 4.40.0"
+    mock_run_command.return_value = mock_result
+
+    # Should raise SystemExit
+    import click
+
+    with pytest.raises(click.exceptions.Exit):
+        check_wrangler_version()
+
+
+def test_create_pyodide_venv_does_not_put_interpreter_on_path(test_dir, tmp_path):
+    """`create_pyodide_venv` must not place an interpreter on the user's PATH.
+
+    Integration test (exercises real `uv`). As of uv 0.8, `uv python install` links
+    a versioned executable (for the Pyodide build, e.g. `pyodide3.13`) into uv's
+    executable directory, which is on PATH. That shadows real CPython for other tools
+    on the system, so the venv must be created without it.
+
+    We redirect uv's executable and install directories to a temp location and assert
+    the executable directory stays empty. The assertion holds regardless of whether
+    venv creation ultimately succeeds: PATH pollution happens during interpreter
+    *installation*, before venv creation can fail (e.g. when the host Node.js cannot
+    run the wasm interpreter to query it).
+    """
+    create_test_pyproject(test_dir, dependencies=[])
+    create_test_wrangler_jsonc(test_dir, python_version="3.13")
+
+    bin_dir = tmp_path / "uv-bin"
+    install_dir = tmp_path / "uv-pythons"
+    env = {
+        "UV_PYTHON_BIN_DIR": str(bin_dir),
+        "UV_PYTHON_INSTALL_DIR": str(install_dir),
+    }
+
+    import click
+
+    with patch.dict(os.environ, env):
+        try:
+            pywrangler_sync.create_pyodide_venv()
+        except click.exceptions.Exit:
+            # Venv creation can fail when the host Node.js can't query the wasm
+            # interpreter; the PATH-pollution assertion below is the point.
+            pass
+
+    leaked = sorted(p.name for p in bin_dir.iterdir()) if bin_dir.exists() else []
+    assert leaked == [], (
+        f"create_pyodide_venv leaked executable(s) onto PATH via UV_PYTHON_BIN_DIR: "
+        f"{leaked}"
+    )
+
+
+# Tests for PYWRANGLER_LOG environment variable
+
+
+def test_env_var_debug_level(test_dir, monkeypatch, caplog):
+    monkeypatch.setenv("PYWRANGLER_LOG", "debug")
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir)
+
+    # Need to reimport to pick up env var change
+    import importlib
+
+    import pywrangler.utils
+
+    importlib.reload(pywrangler.utils)
+
+    from pywrangler.utils import setup_logging
+
+    level = setup_logging()
+    assert level == logging.DEBUG
+
+
+def test_env_var_error_level(test_dir, monkeypatch):
+    """Test that PYWRANGLER_LOG=error sets ERROR level."""
+    monkeypatch.setenv("PYWRANGLER_LOG", "error")
+
+    import importlib
+
+    import pywrangler.utils
+
+    importlib.reload(pywrangler.utils)
+
+    from pywrangler.utils import setup_logging
+
+    level = setup_logging()
+    assert level == logging.ERROR
+
+
+def test_env_var_case_insensitive(test_dir, monkeypatch):
+    """Test that PYWRANGLER_LOG is case-insensitive."""
+    monkeypatch.setenv("PYWRANGLER_LOG", "DEBUG")
+
+    import importlib
+
+    import pywrangler.utils
+
+    importlib.reload(pywrangler.utils)
+
+    from pywrangler.utils import setup_logging
+
+    level = setup_logging()
+    assert level == logging.DEBUG
+
+
+def test_debug_flag_overrides_env(test_dir, monkeypatch, caplog):
+    """Test that --debug flag overrides PYWRANGLER_LOG=error."""
+    monkeypatch.setenv("PYWRANGLER_LOG", "error")
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir)
+
+    runner = CliRunner()
+    runner.invoke(app, ["--debug", "sync"])
+
+    debug_logs = [
+        record for record in caplog.records if record.levelno == logging.DEBUG
+    ]
+    assert len(debug_logs) > 0, "--debug flag should override PYWRANGLER_LOG=error"
+
+
+def test_env_var_invalid(test_dir, monkeypatch, capsys):
+    """Test that invalid PYWRANGLER_LOG value produces warning."""
+    monkeypatch.setenv("PYWRANGLER_LOG", "invalid_value")
+
+    import importlib
+
+    import pywrangler.utils
+
+    importlib.reload(pywrangler.utils)
+
+    from pywrangler.utils import setup_logging
+
+    level = setup_logging()
+
+    captured = capsys.readouterr()
+    assert "Warning" in captured.err
+    assert "invalid_value" in captured.err
+    assert level == logging.INFO
+
+
+def test_startup_banner(test_dir, monkeypatch):
+    """Test that debug output contains version, platform, and working directory."""
+    monkeypatch.setenv("PYWRANGLER_LOG", "debug")
+    create_test_pyproject(test_dir)
+    create_test_wrangler_jsonc(test_dir)
+
+    import importlib
+
+    import pywrangler.utils
+
+    importlib.reload(pywrangler.utils)
+
+    from pywrangler.utils import get_pywrangler_version, log_startup_info
+
+    # Verify the functions exist and return expected content
+    version = get_pywrangler_version()
+    assert version is not None
+
+    # Verify log_startup_info can be called without error
+    # The actual logging is tested via integration in test_debug_flag
+    log_startup_info()

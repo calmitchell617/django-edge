@@ -1,0 +1,180 @@
+# Contributing to workers-py
+
+Thank you for your interest in contributing to workers-py! This document provides guidelines and information to help you contribute effectively.
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Development Setup](#development-setup)
+- [Making Changes](#making-changes)
+- [Commit Message Guidelines](#commit-message-guidelines)
+- [Release Process](#release-process)
+- [Submitting Changes](#submitting-changes)
+
+## Getting Started
+
+1. Fork the repository on GitHub
+2. Clone your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/workers-py.git
+   cd workers-py
+   ```
+3. Set up the development environment (see [Development Setup](#development-setup))
+
+## Development Setup
+
+This is a monorepo containing multiple Python packages. Each package is located in the `packages/` directory:
+
+- `packages/cli/` - The Python workers cli, `workers-py` on PyPI
+- `packages/runtime-sdk/` - Python SDK for Cloudflare Workers, `workers-runtime-sdk` on PyPI
+- `packages/django-cf/` - Django integration for Cloudflare services, `django-cf` on PyPI
+
+### Working with a specific package
+
+```bash
+cd packages/<package-name>
+uv sync
+```
+
+### Development Dependencies
+
+Each package includes these development tools:
+- **pytest**: Testing framework
+- **ruff**: Fast Python linter
+- **mypy**: Static type checking
+
+## Making Changes
+
+1. Create a new branch for your feature or bugfix:
+   ```bash
+   git checkout -b your-username/your-change-name
+   ```
+
+2. Navigate to the package you're modifying:
+   ```bash
+   cd packages/<package-name>
+   ```
+
+3. Run the formatter and linter through pre-commit, which uses the same
+   pinned tool versions as CI (a bare `uvx ruff` runs the latest release,
+   whose rule set can disagree with the pinned one):
+
+   ```bash
+   uvx pre-commit run ruff-format -a   # format
+   uvx pre-commit run ruff -a          # lint (applies safe fixes)
+   ```
+
+   Or run every check CI runs with `uvx pre-commit run -a`. Installing the
+   hook once with `uvx pre-commit install` runs them automatically on each
+   commit.
+
+4. Add or update tests as needed
+
+5. Run the test suite: `uv run pytest`
+
+## Commit Message Guidelines
+
+This project uses automated semantic versioning via `python-semantic-release` with the
+**conventional-monorepo** parser, which relies on tags and scopes in the commit message
+to determine whether a release should be made for each package.
+
+### Commit Format
+
+The format parsed by python-semantic-release is https://www.conventionalcommits.org/en/v1.0.0/#summary.
+For monorepo support, use the package-specific scope prefix:
+
+```
+<tag>(<package-prefix>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Package Scope Prefixes
+
+- `cli` - For changes to the workers-py package
+- `runtime-sdk` - For changes to the workers-runtime-sdk package
+- `django-cf` - For changes to the django-cf package
+
+### Examples
+
+```
+feat(cli): add new CLI command for syncing
+fix(runtime-sdk): handle edge case in API client
+feat(django-cf): add support for new R2 feature
+docs(cli): update README with new usage examples
+```
+
+### Commit Tags
+
+Including "BREAKING CHANGE" in the commit message (either in the body or footer) will trigger a major release.
+
+The following tags will trigger a release:
+
+- **feat**: A new feature (triggers minor version bump)
+- **fix**: A bug fix (triggers patch version bump)
+
+The following tags will not trigger a release:
+
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, etc.)
+- **refactor**: Code refactoring without feature changes
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependency updates
+- **ci**: CI/CD configuration changes
+
+## Release Process
+
+This project uses **python-semantic-release** with monorepo support for automated versioning and releases. Each package is released independently.
+
+### Automated Releases
+
+1. **Version Calculation**: Based on conventional commit messages since the last release:
+   - `fix:` commits → patch version bump (1.0.0 → 1.0.1)
+   - `feat:` commits → minor version bump (1.0.0 → 1.1.0)
+   - `BREAKING CHANGE:` → major version bump (1.0.0 → 2.0.0)
+
+2. **Release Trigger**: Releases are created automatically when changes are pushed to the `main` branch
+
+3. **Release Artifacts** (per package):
+   - Git tag (format: `<package-name>-v{version}`, e.g., `workers-py-v1.7.0`)
+   - Updated `pyproject.toml` version
+   - Changelog generation
+   - PyPI package publication (via GitHub Actions)
+
+### Manual Release
+
+To manually release a specific package:
+
+```bash
+cd packages/<package-name>
+semantic-release version
+```
+
+## Submitting Changes
+
+1. **Push your branch** to your fork:
+   ```bash
+   git push origin your-username/your-change-name
+   ```
+
+2. **Create a Pull Request** on GitHub with:
+   - Clear title following conventional commit format with package scope
+   - Description of changes made
+   - Any breaking changes clearly documented
+   - Explanation of how you tested your changes under a "Test Plan" section
+
+3. **Review Process**:
+   - All CI checks must pass
+   - Code review from maintainers
+   - Tests must pass
+   - Documentation updates if needed
+
+## Questions or Issues?
+
+- Open an issue on GitHub for bugs or feature requests
+- Check existing issues before creating new ones
+- For questions, use GitHub Discussions or open an issue
+
+Thank you for contributing to workers-py!
