@@ -1,0 +1,31 @@
+name: Reference architecture checks
+on:
+  push:
+    paths: ["benchmark/**", ".github/workflows/benchmark-checks.yml", "workers-py/packages/**"]
+  pull_request:
+    paths: ["benchmark/**", ".github/workflows/benchmark-checks.yml", "workers-py/packages/**"]
+permissions:
+  contents: read
+jobs:
+  native-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: benchmark
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+      - run: uv sync
+      - name: Native Django integration and algorithm checks
+        run: uv run python -m unittest discover -s tests -v
+        env:
+          PYTHONPATH: src
+          EDGE_SQLITE_TEST: "1"
+          EDGE_LOCAL: "1"
+      - name: Check committed migration state
+        run: uv run python src/manage.py makemigrations --check --dry-run
+        env:
+          EDGE_SQLITE_TEST: "1"
+          EDGE_LOCAL: "1"

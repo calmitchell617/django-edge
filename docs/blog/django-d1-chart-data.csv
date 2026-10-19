@@ -1,0 +1,4 @@
+Architecture,Successful API requests per second,Median API latency (ms),p95 API latency (ms)
+PostgreSQL only,2.31,3922.96,4549.96
+D1 auth cache,2.53,3591.28,6751.9
+D1 auth + content cache,12.8,493.33,2799.07

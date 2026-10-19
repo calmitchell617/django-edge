@@ -1,0 +1,125 @@
+{
+  "started_utc": "2026-10-18T13:21:13.606755+00:00",
+  "url": "https://django-edge-reference.calmitchell617.workers.dev",
+  "client_location": "Local MacBook; London ingress; physical location unverified",
+  "python": "3.14.8",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "warmup_seconds": 10.0,
+  "measurement_seconds": 30.0,
+  "repetitions": 3,
+  "concurrency": [
+    1,
+    10
+  ],
+  "postgres_connection_limit": 20,
+  "maximum_client_concurrency": 10,
+  "policies": [
+    "postgres",
+    "auth_cache",
+    "all_cache"
+  ],
+  "dependencies": {
+    "django": "5.2.18",
+    "django-cf": "0.2.17",
+    "django-pgtrigger": "4.17.0",
+    "psycopg": "3.3.6",
+    "workers-py": "1.17.8",
+    "workers-runtime-sdk": "1.9.4",
+    "httpx": "0.28.1"
+  },
+  "upstream_revision": "c62b46790a773de6edf59216c054bdb8244e1485",
+  "git_commit": "3a11d0c4eaf61767ae3abead2fe4e5efa806e403",
+  "git_dirty": true,
+  "wrangler": {
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "django-edge-reference",
+    "account_id": "fee808c4997db074217f4c57b064fa91",
+    "main": "src/index.py",
+    "compatibility_date": "2026-10-18",
+    "compatibility_flags": [
+      "python_workers"
+    ],
+    "build": {
+      "command": "uv run --no-sync python scripts/materialize_sdk.py"
+    },
+    "python_modules": {
+      "exclude": [
+        "**/*.pyc",
+        "**/__pycache__/**",
+        "**/*.po"
+      ]
+    },
+    "placement": {
+      "region": "aws:ap-southeast-2"
+    },
+    "observability": {
+      "enabled": true
+    },
+    "durable_objects": {
+      "bindings": [
+        {
+          "name": "SYNC",
+          "class_name": "SyncCompanion"
+        }
+      ]
+    },
+    "migrations": [
+      {
+        "tag": "v1",
+        "new_sqlite_classes": [
+          "SyncCompanion"
+        ]
+      }
+    ],
+    "d1_databases": [
+      {
+        "binding": "CACHE",
+        "database_name": "django-edge-cache",
+        "database_id": "84bae5c3-0f93-4b2f-8a88-050da2b8ad9b"
+      }
+    ]
+  },
+  "lockfile_sha256": {
+    "uv.lock": "8ce22c47dd5b12d9cc11ba66b25541ace4de67d305a9de43379883f229e67b07",
+    "pylock.toml": "af8400566c8eee076865f797ef28d2717ad3e276abdfec1fe8b0a09cdf5d6faa",
+    "package-lock.json": "49321ba8b8d0c84abad98085a1e4843c66eb20159dd5c7a1f52bca3fa911bbb7"
+  },
+  "worker_dependencies": [
+    {
+      "name": "asgiref",
+      "version": "3.12.1"
+    },
+    {
+      "name": "django",
+      "version": "5.2.18"
+    },
+    {
+      "name": "django-cf",
+      "version": "local source"
+    },
+    {
+      "name": "django-pgtrigger",
+      "version": "4.17.0"
+    },
+    {
+      "name": "psycopg",
+      "version": "3.3.5"
+    },
+    {
+      "name": "psycopg-binary",
+      "version": "3.3.5"
+    },
+    {
+      "name": "sqlparse",
+      "version": "0.6.0"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.5"
+    },
+    {
+      "name": "workers-runtime-sdk",
+      "version": "local source"
+    }
+  ]
+}

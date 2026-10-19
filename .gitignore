@@ -1,1 +1,14 @@
 .env
+.dev.vars*
+.venv/
+node_modules/
+python_modules/
+.wrangler/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+benchmark/src/vendor/
+benchmark/.venv-workers/
+benchmark/results/private/
+*.local.json

@@ -1,0 +1,358 @@
+[
+  {
+    "event": "login",
+    "primary": {
+      "visible_ms": 692.9475409997394,
+      "attempts": 1,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1454
+        },
+        "duration": 0.1454,
+        "changes": 0,
+        "last_row_id": 14,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 486.80487499950686,
+      "attempts": 1,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 52.99997329711914,
+        "queries": {
+          "cache": {
+            "count": 2,
+            "ms": 52.99997329711914
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.3033
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.1935
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 52.99997329711914,
+          "content_ms": 0.0
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  },
+  {
+    "event": "insert",
+    "primary": {
+      "visible_ms": 693.2497910020174,
+      "attempts": 1,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1398
+        },
+        "duration": 0.1398,
+        "changes": 0,
+        "last_row_id": 10001,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 1127.230165999208,
+      "attempts": 2,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 72.00002670288086,
+        "queries": {
+          "cache": {
+            "count": 3,
+            "ms": 72.00002670288086
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.208
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2719
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2088
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 45.00007629394531,
+          "content_ms": 26.999950408935547
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  },
+  {
+    "event": "update",
+    "primary": {
+      "visible_ms": 705.347167000582,
+      "attempts": 1,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1895
+        },
+        "duration": 0.1895,
+        "changes": 0,
+        "last_row_id": 10001,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 511.1909999977797,
+      "attempts": 1,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 70.00017166137695,
+        "queries": {
+          "cache": {
+            "count": 3,
+            "ms": 70.00017166137695
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2095
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2027
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2599
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 47.00016975402832,
+          "content_ms": 23.000001907348633
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  },
+  {
+    "event": "soft_delete",
+    "primary": {
+      "visible_ms": 1499.2818749960861,
+      "attempts": 2,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1531
+        },
+        "duration": 0.1531,
+        "changes": 0,
+        "last_row_id": 10001,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 1087.8229160007322,
+      "attempts": 2,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 68.9997673034668,
+        "queries": {
+          "cache": {
+            "count": 3,
+            "ms": 68.9997673034668
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.196
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2325
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.1948
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 44.99983787536621,
+          "content_ms": 23.999929428100586
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  },
+  {
+    "event": "logout",
+    "primary": {
+      "visible_ms": 662.0793339970987,
+      "attempts": 1,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1584
+        },
+        "duration": 0.1584,
+        "changes": 0,
+        "last_row_id": 10001,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 401.8567500024801,
+      "attempts": 1,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 19.00005340576172,
+        "queries": {
+          "cache": {
+            "count": 1,
+            "ms": 19.00005340576172
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.1842
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 19.00005340576172
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  },
+  {
+    "event": "deactivate",
+    "primary": {
+      "visible_ms": 667.47774999385,
+      "attempts": 1,
+      "meta": {
+        "served_by": "v3-prod",
+        "served_by_region": "WEUR",
+        "served_by_colo": "AMS",
+        "served_by_primary": true,
+        "timings": {
+          "sql_duration_ms": 0.1605
+        },
+        "duration": 0.1605,
+        "changes": 0,
+        "last_row_id": 15,
+        "changed_db": false,
+        "size_after": 6926336,
+        "rows_read": 1,
+        "rows_written": 0,
+        "total_attempts": 1
+      }
+    },
+    "australian_read": {
+      "visible_ms": 988.2240410006489,
+      "attempts": 2,
+      "placement": "unknown",
+      "metrics": {
+        "policy": "all_cache",
+        "server_ms": 42.00005531311035,
+        "queries": {
+          "cache": {
+            "count": 2,
+            "ms": 42.00005531311035
+          }
+        },
+        "pg_connect_ms": [],
+        "d1": [
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2859
+          },
+          {
+            "served_by_region": "OC",
+            "served_by_primary": false,
+            "duration": 0.2182
+          }
+        ],
+        "database_errors": [],
+        "segments": {
+          "auth_ms": 42.00005531311035
+        }
+      }
+    },
+    "clock": "elapsed at client after mutation response; includes observation round trips"
+  }
+]

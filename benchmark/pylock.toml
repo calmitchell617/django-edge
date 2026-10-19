@@ -1,0 +1,50 @@
+lock-version = "1.0"
+created-by = "uv"
+requires-python = ">=3.14.2"
+
+[[packages]]
+name = "asgiref"
+version = "3.12.1"
+wheels = [{ url = "https://files.pythonhosted.org/packages/c0/1b/54f4ad77cd8a584fa70746c47df988e002cf1ee1eba43364d46f87803647/asgiref-3.12.1-py3-none-any.whl", upload-time = 2026-07-14T09:56:16Z, size = 25478, hashes = { sha256 = "fe386d1c2bff7259ea95929266d12a8cf9a8b5a1c2598402967d8792e7a7c094" } }]
+
+[[packages]]
+name = "django"
+version = "5.2.18"
+wheels = [{ url = "https://files.pythonhosted.org/packages/d6/01/6568ec52b26548ca1b83d33249f7274db3bf74698f42c0da42ec9db1a24a/django-5.2.18-py3-none-any.whl", upload-time = 2026-10-06T13:01:04Z, size = 8316071, hashes = { sha256 = "92ed81d500be6408ecd704d7bd1366c534f30427bffcc63c5fefb129561aec7c" } }]
+
+[[packages]]
+name = "django-cf"
+directory = { path = "../workers-py/packages/django-cf", editable = false }
+
+[[packages]]
+name = "django-pgtrigger"
+version = "4.17.0"
+wheels = [{ url = "https://files.pythonhosted.org/packages/91/47/13c0c23c134cd0f0b0addfbc3ef1477f90d891184d21689f9074b794b00c/django_pgtrigger-4.17.0-py3-none-any.whl", upload-time = 2025-12-04T15:46:05Z, size = 36326, hashes = { sha256 = "06048cdeb57e20987fd0bf7dd673512a1413a08868eea248d70dbb970e967175" } }]
+
+[[packages]]
+name = "psycopg"
+version = "3.3.5"
+wheels = [
+    { url = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/psycopg-3.3.5-py3-none-any.whl", hashes = { sha256 = "9fd2e690e13159b23b50fe54989cbc483fcc8d961da86c6fc3862c2ebe05e456" } },
+    { url = "https://files.pythonhosted.org/packages/3d/2e/d0a645bcaadde68bd6d93c43f02f14b0191bdda367ce3f7722abe3da744a/psycopg-3.3.5-py3-none-any.whl", hashes = { sha256 = "ce5aa5cdb4f9379f00f487590e5890bfa7df9a164648c969ffa628505e21af4e" } },
+]
+
+[[packages]]
+name = "psycopg-binary"
+version = "3.3.5"
+marker = "implementation_name != 'pypy'"
+wheels = [{ url = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/psycopg_binary-3.3.5-cp314-cp314-pyemscripten_2026_0_wasm32.whl", hashes = { sha256 = "20899ebda6aa920ff7c410ba72c3ccd2980b89a991e598e864e9dcdbda01ec95" } }]
+
+[[packages]]
+name = "sqlparse"
+version = "0.6.0"
+wheels = [{ url = "https://files.pythonhosted.org/packages/d9/50/f00935da0ec7cbf325f8dc4f772ae46fbc7b672dd62876e73f0a94adda57/sqlparse-0.6.0-py3-none-any.whl", upload-time = 2026-08-13T19:16:04Z, size = 50070, hashes = { sha256 = "b861c0288ce2fa56209a9a6412d2e066ac664b3873b89c26c9d8415e8e32996f" } }]
+
+[[packages]]
+name = "tzdata"
+version = "2026.5"
+wheels = [{ url = "https://files.pythonhosted.org/packages/94/21/1e5995a1c920cce14e4bffae20c665ec10e7ed03ab25e006cd741092b718/tzdata-2026.5-py2.py3-none-any.whl", upload-time = 2026-10-03T09:23:12Z, size = 347996, hashes = { sha256 = "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac" } }]
+
+[[packages]]
+name = "workers-runtime-sdk"
+directory = { path = "../workers-py/packages/runtime-sdk", editable = true }

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="608" viewBox="0 0 900 608" role="img" aria-labelledby="title desc">
+<title id="title">Django API p95 latency by read policy</title>
+<desc id="desc">Bars show measured client latency in milliseconds. See the accompanying report for errors, placement and methodology.</desc>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="sans-serif" font-size="14" fill="#17202a">
+<text x="20" y="28" font-size="20">Measured request latency — p95 (ms)</text>
+<text x="20" y="73">all_cache · c=1 · detail</text>
+<rect x="330" y="55" width="32.1" height="27" fill="#148f77"/>
+<text x="372.1" y="73">531.0</text>
+<text x="20" y="117">all_cache · c=1 · list</text>
+<rect x="330" y="99" width="37.3" height="27" fill="#148f77"/>
+<text x="377.3" y="117">616.8</text>
+<text x="20" y="161">all_cache · c=10 · detail</text>
+<rect x="330" y="143" width="60.1" height="27" fill="#148f77"/>
+<text x="400.1" y="161">992.6</text>
+<text x="20" y="205">all_cache · c=10 · list</text>
+<rect x="330" y="187" width="197.5" height="27" fill="#148f77"/>
+<text x="537.5" y="205">3264.5</text>
+<text x="20" y="249">auth_cache · c=1 · detail</text>
+<rect x="330" y="231" width="201.9" height="27" fill="#2471a3"/>
+<text x="541.9" y="249">3336.2</text>
+<text x="20" y="293">auth_cache · c=1 · list</text>
+<rect x="330" y="275" width="235.6" height="27" fill="#2471a3"/>
+<text x="575.6" y="293">3894.2</text>
+<text x="20" y="337">auth_cache · c=10 · detail</text>
+<rect x="330" y="319" width="211.9" height="27" fill="#2471a3"/>
+<text x="551.9" y="337">3501.9</text>
+<text x="20" y="381">auth_cache · c=10 · list</text>
+<rect x="330" y="363" width="440.0" height="27" fill="#2471a3"/>
+<text x="780.0" y="381">7271.2</text>
+<text x="20" y="425">postgres · c=1 · detail</text>
+<rect x="330" y="407" width="233.1" height="27" fill="#566573"/>
+<text x="573.1" y="425">3852.3</text>
+<text x="20" y="469">postgres · c=1 · list</text>
+<rect x="330" y="451" width="272.0" height="27" fill="#566573"/>
+<text x="612.0" y="469">4495.2</text>
+<text x="20" y="513">postgres · c=10 · detail</text>
+<rect x="330" y="495" width="234.2" height="27" fill="#566573"/>
+<text x="574.2" y="513">3869.7</text>
+<text x="20" y="557">postgres · c=10 · list</text>
+<rect x="330" y="539" width="310.4" height="27" fill="#566573"/>
+<text x="650.4" y="557">5129.5</text>
+</g></svg>

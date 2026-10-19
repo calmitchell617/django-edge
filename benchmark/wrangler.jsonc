@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "django-edge-reference",
+  "account_id": "fee808c4997db074217f4c57b064fa91",
+  "main": "src/index.py",
+  "compatibility_date": "2026-10-18",
+  "compatibility_flags": ["python_workers"],
+  "build": { "command": "uv run --no-sync python scripts/materialize_sdk.py" },
+  "python_modules": { "exclude": ["**/*.pyc", "**/__pycache__/**", "**/*.po"] },
+  "placement": { "region": "aws:ap-southeast-2" },
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "SYNC", "class_name": "SyncCompanion" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyncCompanion"] }],
+  "d1_databases": [{
+    "binding": "CACHE",
+    "database_name": "django-edge-cache",
+    "database_id": "84bae5c3-0f93-4b2f-8a88-050da2b8ad9b"
+  }]
+}

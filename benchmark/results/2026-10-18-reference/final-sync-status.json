@@ -1,0 +1,43 @@
+{
+  "enabled": false,
+  "failures": 0,
+  "interval_ms": 1000,
+  "cycle_gap_ms": 1684,
+  "last_cycle": {
+    "tables": {
+      "demo_user": {
+        "copied": 0,
+        "acknowledged": 0,
+        "batches": 0,
+        "pending": 0
+      },
+      "demo_session": {
+        "copied": 0,
+        "acknowledged": 0,
+        "batches": 0,
+        "pending": 0
+      },
+      "demo_post": {
+        "copied": 0,
+        "acknowledged": 0,
+        "batches": 0,
+        "pending": 0
+      }
+    },
+    "elapsed_ms": 753.000020980835,
+    "queries": {
+      "default": {
+        "count": 6,
+        "ms": 292.00005531311035
+      }
+    },
+    "pg_connect_ms": [
+      411.00001335144043
+    ]
+  },
+  "last_success_ms": 1792330682220,
+  "error": null,
+  "error_sqlstate": null,
+  "started_ms": 1792330681467,
+  "finished_ms": 1792330682221
+}

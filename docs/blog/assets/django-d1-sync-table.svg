@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="403.2pt" viewBox="0 0 1152 403.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title>How one row stays in sync</title>
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title>How one row stays in sync</dc:title>
+    <dc:date>2026-10-19T10:41:57.571801</dc:date>
+    <dc:description>Five illustrative PostgreSQL row states: in sync, edited, copied and acknowledged, soft-deleted pending synchronization, and deletion copied and acknowledged. needs_sync and is_deleted values are color-coded.</dc:description>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 403.2 
+L 1152 403.2 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 36 90 
+L 1116 90 
+L 1116 136.8 
+L 36 136.8 
+z
+" clip-path="url(#p9099502723)" style="fill: #007fba"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 36 136.8 
+L 1116 136.8 
+L 1116 183.6 
+L 36 183.6 
+z
+" clip-path="url(#p9099502723)" style="fill: #f1f7fb"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 36 183.6 
+L 1116 183.6 
+L 1116 230.4 
+L 36 230.4 
+z
+" clip-path="url(#p9099502723)" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 36 230.4 
+L 1116 230.4 
+L 1116 277.2 
+L 36 277.2 
+z
+" clip-path="url(#p9099502723)" style="fill: #f1f7fb"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 36 277.2 
+L 1116 277.2 
+L 1116 324 
+L 36 324 
+z
+" clip-path="url(#p9099502723)" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 36 324 
+L 1116 324 
+L 1116 370.8 
+L 36 370.8 
+z
+" clip-path="url(#p9099502723)" style="fill: #f1f7fb"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 36 183.6 
+L 1116 183.6 
+" clip-path="url(#p9099502723)" style="fill: none; stroke: #d4dbe1; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 36 230.4 
+L 1116 230.4 
+" clip-path="url(#p9099502723)" style="fill: none; stroke: #d4dbe1; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 36 277.2 
+L 1116 277.2 
+" clip-path="url(#p9099502723)" style="fill: none; stroke: #d4dbe1; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 36 324 
+L 1116 324 
+" clip-path="url(#p9099502723)" style="fill: none; stroke: #d4dbe1; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 36 370.8 
+L 1116 370.8 
+" clip-path="url(#p9099502723)" style="fill: none; stroke: #d4dbe1; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 30px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="576" y="54.594141" transform="rotate(-0 576 54.594141)">How one row stays in sync</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="219.6" y="119.476172" transform="rotate(-0 219.6 119.476172)">Row state</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(467.335703 105.954531)">needs_sync</text>
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(454.891172 129.924531)">Copy needed?</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(698.299062 105.954531)">sync_version</text>
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(683.714922 129.924531)">Change number</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(948.536172 105.954531)">is_deleted</text>
+    <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(954.855391 131.637812)">Deleted?</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #161616" x="48.24" y="164.35625" transform="rotate(-0 48.24 164.35625)">In sync</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="522" y="164.356875" transform="rotate(-0 522 164.356875)">false</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="759.6" y="164.35625" transform="rotate(-0 759.6 164.35625)">1</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="997.2" y="164.356875" transform="rotate(-0 997.2 164.356875)">false</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #161616" x="48.24" y="211.156875" transform="rotate(-0 48.24 211.156875)">Edited</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #875600" x="522" y="211.15625" transform="rotate(-0 522 211.15625)">true</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="759.6" y="211.15625" transform="rotate(-0 759.6 211.15625)">2</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="997.2" y="211.156875" transform="rotate(-0 997.2 211.156875)">false</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #161616" x="48.24" y="257.956875" transform="rotate(-0 48.24 257.956875)">Copied to D1</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="522" y="257.956875" transform="rotate(-0 522 257.956875)">false</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="759.6" y="257.95625" transform="rotate(-0 759.6 257.95625)">2</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="997.2" y="257.956875" transform="rotate(-0 997.2 257.956875)">false</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #161616" x="48.24" y="304.756875" transform="rotate(-0 48.24 304.756875)">Deleted</text>
+   </g>
+   <g id="text_19">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #875600" x="522" y="304.75625" transform="rotate(-0 522 304.75625)">true</text>
+   </g>
+   <g id="text_20">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="759.6" y="304.75625" transform="rotate(-0 759.6 304.75625)">3</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #a61b1b" x="997.2" y="304.75625" transform="rotate(-0 997.2 304.75625)">true</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #161616" x="48.24" y="351.556875" transform="rotate(-0 48.24 351.556875)">Deletion synced to D1</text>
+   </g>
+   <g id="text_23">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #17613b" x="522" y="351.556875" transform="rotate(-0 522 351.556875)">false</text>
+   </g>
+   <g id="text_24">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #161616" x="759.6" y="351.55625" transform="rotate(-0 759.6 351.55625)">3</text>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #a61b1b" x="997.2" y="351.55625" transform="rotate(-0 997.2 351.55625)">true</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p9099502723">
+   <rect x="0" y="0" width="1152" height="403.2"/>
+  </clipPath>
+ </defs>
+</svg>
