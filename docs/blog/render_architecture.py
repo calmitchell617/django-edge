@@ -60,7 +60,7 @@ def arrow(start, end, *, blue=False, dashed=False):
     ))
 
 
-text(800, 208, "D1 as a relational cache for Django", 32, weight="bold")
+text(800, 208, "Cloudflare D1 as a relational cache for Django", 32, weight="bold")
 
 # The replica and app are nearby; the source and cache writer stay in Europe.
 for x, width, title in (
@@ -101,7 +101,7 @@ text(800, 805, "D1 asynchronous\nread replication", 17, BLUE, linespacing=1.5)
 for extension in ("png", "svg"):
     destination = ASSETS / f"django-d1-architecture.{extension}"
     fig.savefig(destination, dpi=160, facecolor="white", metadata={
-        "Title": "D1 as a relational cache for Django",
+        "Title": "Cloudflare D1 as a relational cache for Django",
         "Description": "Django queries PostgreSQL for authoritative reads and writes, and D1 for opted-in reads. A Durable Object mirrors pending PostgreSQL rows to D1's primary, which replicates asynchronously to Oceania.",
     })
     print(destination)

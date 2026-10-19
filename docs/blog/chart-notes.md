@@ -8,7 +8,7 @@ This is the closest match to the existing PostgreSQL 16 vs 17 payments-per-secon
 
 - Category: `Architecture`.
 - Value: `Successful API requests per second`.
-- Title: **"Across the world" Django API throughput with D1 caching**.
+- Title: **"Across the world" Django API throughput with Cloudflare D1 caching**.
 - Y-axis: **Successful API requests per second**. Start at zero; higher is better.
 - Keep the existing white background, bold black title and labels, light horizontal gridlines, blue columns, and DataSystemReviews.com branding.
 - Display values to two decimal places: **2.31**, **2.53**, **12.80**.

@@ -27,7 +27,7 @@ parser.add_argument("--metric", choices=("throughput", "latency"), default="thro
 args = parser.parse_args()
 latency = args.metric == "latency"
 column = "Median API latency (ms)" if latency else "Successful API requests per second"
-title = f'"Across the world"\nDjango API {args.metric} with D1 caching'
+title = f'"Across the world"\nDjango API {args.metric} with Cloudflare D1 caching'
 limit = 4500 if latency else 15
 with (HERE / "django-d1-chart-data.csv").open(newline="") as source:
     rows = list(csv.DictReader(source))
